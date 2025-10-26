@@ -1,6 +1,7 @@
 package com.softserve.bookstoreapi.model.enums;
 
 import com.softserve.bookstoreapi.model.generaEntities.AuditableEntity;
+import com.softserve.bookstoreapi.model.generaEntities.SoftDeletableEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -21,7 +22,7 @@ import lombok.Setter;
                 @Index(name = "idx_genre_active", columnList = "active")
         }
 )
-public class Genre extends AuditableEntity {
+public class Genre extends SoftDeletableEntity {
 
     @NotBlank(message = "Назва жанру обов'язкова")
     @Size(min = 2, max = 100, message = "Назва жанру повинна містити від 2 до 100 символів")
@@ -30,7 +31,4 @@ public class Genre extends AuditableEntity {
 
     @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Column(nullable = false)
-    private Boolean active = true;
 }

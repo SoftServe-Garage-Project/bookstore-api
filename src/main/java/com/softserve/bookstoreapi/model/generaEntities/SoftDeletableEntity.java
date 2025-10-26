@@ -19,16 +19,4 @@ public abstract class SoftDeletableEntity extends AuditableEntity {
     public boolean isDeleted() {
         return !active || deletedAt != null;
     }
-
-    public void softDelete() {
-        this.active = false;
-        this.deletedAt = LocalDateTime.now();
-        this.setUpdatedAt(LocalDateTime.now());
-    }
-
-    public void restore() {
-        this.active = true;
-        this.deletedAt = null;
-        this.setUpdatedAt(LocalDateTime.now());
-    }
 }

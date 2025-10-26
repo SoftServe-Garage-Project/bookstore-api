@@ -13,7 +13,9 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -54,23 +56,15 @@ public class User extends SoftDeletableEntity {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
 
-    @ElementCollection(fetch = FetchType.EAGER, targetClass = String.class)
+    @ElementCollection(fetch = FetchType.LAZY, targetClass = String.class)
     @CollectionTable(name = "user_permissions", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "permission", length = 50)
-    private Set<String> permissions = new HashSet<>();
+    private List<String> permissions = new ArrayList<>();
 
     public Set<GrantedAuthority> getAuthorities() {
         Set<GrantedAuthority> authorities = new HashSet<>();
         authorities.add(new SimpleGrantedAuthority(role.name()));
         permissions.forEach(perm -> authorities.add(new SimpleGrantedAuthority(perm)));
         return authorities;
-    }
-
-    public void addPermission(String permission) {
-        permissions.add(permission);
-    }
-
-    public void removePermission(String permission) {
-        permissions.remove(permission);
     }
 }

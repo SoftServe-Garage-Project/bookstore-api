@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,7 +54,6 @@ public class Book extends SoftDeletableEntity {
 
     @NotNull(message = "Рік видання обов'язковий")
     @Min(value = 1000, message = "Рік видання повинен бути не менше 1000")
-    @Max(value = 2025, message = "Рік видання не може бути більше поточного року")
     @Column(nullable = false, name = "published_year")
     private Integer publishedYear;
 

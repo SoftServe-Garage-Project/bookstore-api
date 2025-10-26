@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public abstract class AuditableEntity extends BaseEntity {
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
@@ -25,9 +25,5 @@ public abstract class AuditableEntity extends BaseEntity {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 }

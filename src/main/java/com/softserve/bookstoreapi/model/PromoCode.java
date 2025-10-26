@@ -56,7 +56,7 @@ public class PromoCode extends SoftDeletableEntity {
 
     @Min(value = 0, message = "Поточна кількість використань не може бути від'ємною")
     @Column(name = "current_uses", nullable = false)
-    private Integer currentUses = 0;  // Автоматично інкрементується
+    private Integer currentUses = 0;
 
     @DecimalMin(value = "0.0", message = "Мінімальна сума не може бути від'ємною")
     @Column(name = "min_order_amount", precision = 10, scale = 2)
@@ -68,14 +68,5 @@ public class PromoCode extends SoftDeletableEntity {
                 (validTo == null || now.isBefore(validTo));
         boolean usesValid = maxUses == null || currentUses < maxUses;
         return super.isDeleted() ? false : timeValid && usesValid;
-    }
-
-    public void use() {
-        if (isActive()) {
-            this.currentUses++;
-            this.setUpdatedAt(LocalDateTime.now());
-        } else {
-            throw new InvalidPromoCodeException("Промокод не дійсний або вичерпаний");
-        }
     }
 }

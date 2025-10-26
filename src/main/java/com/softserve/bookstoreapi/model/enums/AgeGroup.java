@@ -1,6 +1,7 @@
 package com.softserve.bookstoreapi.model.enums;
 
 import com.softserve.bookstoreapi.model.generaEntities.AuditableEntity;
+import com.softserve.bookstoreapi.model.generaEntities.SoftDeletableEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -21,7 +22,7 @@ import lombok.Setter;
                 @Index(name = "idx_age_group_active", columnList = "active")
         }
 )
-public class AgeGroup extends AuditableEntity {
+public class AgeGroup extends SoftDeletableEntity {
 
     @NotBlank(message = "Назва вікової групи обов'язкова")
     @Size(min = 2, max = 50, message = "Назва повинна містити від 2 до 50 символів")
@@ -36,7 +37,4 @@ public class AgeGroup extends AuditableEntity {
 
     @Column(name = "max_age")
     private Integer maxAge;
-
-    @Column(nullable = false)
-    private Boolean active = true;
 }
