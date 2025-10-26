@@ -1,8 +1,5 @@
 package com.softserve.bookstoreapi.model;
 
-import com.softserve.bookstoreapi.model.enums.AgeGroup;
-import com.softserve.bookstoreapi.model.enums.Genre;
-import com.softserve.bookstoreapi.model.enums.Language;
 import com.softserve.bookstoreapi.model.generaEntities.SoftDeletableEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -12,7 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 

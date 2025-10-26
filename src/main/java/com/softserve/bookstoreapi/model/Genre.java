@@ -1,6 +1,5 @@
-package com.softserve.bookstoreapi.model.enums;
+package com.softserve.bookstoreapi.model;
 
-import com.softserve.bookstoreapi.model.generaEntities.AuditableEntity;
 import com.softserve.bookstoreapi.model.generaEntities.SoftDeletableEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
