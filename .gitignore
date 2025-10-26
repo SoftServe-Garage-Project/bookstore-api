@@ -33,5 +33,3 @@ build/
 .vscode/
 
 .env
-
-.resources/keystore.p12

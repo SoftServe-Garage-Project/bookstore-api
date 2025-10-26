@@ -1,8 +1,9 @@
 package com.softserve.bookstoreapi.model.enums;
 
-public enum PaymentStatus {
+public enum TransactionStatus {
     PENDING,
     COMPLETED,
     FAILED,
+    CANCELLED,
     REFUNDED
 }

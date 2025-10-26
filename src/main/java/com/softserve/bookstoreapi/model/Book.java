@@ -3,7 +3,7 @@ package com.softserve.bookstoreapi.model;
 import com.softserve.bookstoreapi.model.enums.AgeGroup;
 import com.softserve.bookstoreapi.model.enums.Genre;
 import com.softserve.bookstoreapi.model.enums.Language;
-import com.softserve.bookstoreapi.model.generaEntities.AuditableEntity;
+import com.softserve.bookstoreapi.model.generaEntities.SoftDeletableEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -19,29 +20,35 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "books")
-public class Book extends AuditableEntity {
+@Table(
+        name = "book",
+        indexes = {
+                @Index(name = "idx_book_title_active", columnList = "title, active"),
+                @Index(name = "idx_book_genre_active", columnList = "genre_id, active"),
+                @Index(name = "idx_book_price_range", columnList = "price"),
+                @Index(name = "idx_book_published_year_active", columnList = "published_year, active"),
+                @Index(name = "idx_book_language_age_active", columnList = "language_id, age_group_id, active"),
+                @Index(name = "idx_book_stock_discount_active", columnList = "stock_quantity, discount_percentage, active"),
+                @Index(name = "idx_book_page_count", columnList = "page_count")
+        }
+)
+public class Book extends SoftDeletableEntity {
 
     @NotBlank(message = "Назва книги обов'язкова")
     @Size(min = 2, max = 255, message = "Назва повинна містити від 2 до 255 символів")
     @Column(nullable = false)
     private String title;
 
-    @NotBlank(message = "Автор обов'язковий")
-    @Size(min = 2, max = 255, message = "Ім'я автора повинно містити від 2 до 255 символів")
-    @Column(nullable = false)
-    private String author;
-
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "genre_id", nullable = false)
     private Genre genre;
 
     @NotNull(message = "Вікова група обов'язкова")
-    @Enumerated(EnumType.STRING)
-    @Column(name = "age_group", nullable = false, length = 50)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "age_group_id", nullable = false)
     private AgeGroup ageGroup;
 
     @NotNull(message = "Рік видання обов'язковий")
@@ -51,12 +58,20 @@ public class Book extends AuditableEntity {
     private Integer publishedYear;
 
     @NotNull(message = "Мова обов'язкова")
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "language_id", nullable = false)
     private Language language;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "book_author",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "author_id")
+    )
+    private List<Author> authors = new ArrayList<>();
+
     @NotNull(message = "Ціна обов'язкова")
-    @DecimalMin(value = "0.0", inclusive = true, message = "Ціна не може бути від'ємною")
+    @DecimalMin(value = "0.0", message = "Ціна не може бути від'ємною")
     @DecimalMax(value = "999999.99", message = "Ціна занадто велика")
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
@@ -66,11 +81,17 @@ public class Book extends AuditableEntity {
     @Column(name = "stock_quantity", nullable = false)
     private Integer stockQuantity;
 
-    @DecimalMin(value = "0.0", inclusive = true, message = "Знижка не може бути від'ємною")
+    @DecimalMin(value = "0.0", message = "Знижка не може бути від'ємною")
     @DecimalMax(value = "100.0", message = "Знижка не може перевищувати 100%")
     @Column(name = "discount_percentage", precision = 5, scale = 2)
     private BigDecimal discountPercentage = BigDecimal.ZERO;
 
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<Review> reviews;
+    @Column(name = "page_count")
+    private Integer pageCount;
+
+    @Column(name = "cover_image_url", length = 500)
+    private String coverImageUrl;
+
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Review> reviews = new ArrayList<>();
 }

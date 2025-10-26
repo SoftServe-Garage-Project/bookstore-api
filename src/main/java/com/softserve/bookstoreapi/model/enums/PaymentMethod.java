@@ -5,5 +5,5 @@ public enum PaymentMethod {
     PAYPAL,
     APPLE_PAY,
     GOOGLE_PAY,
-    CASH_ON_DELIVERY
+    BALANCE
 }
