@@ -4,6 +4,7 @@ import com.softserve.bookstoreapi.model.enums.OrderStatus;
 import com.softserve.bookstoreapi.model.enums.PaymentMethod;
 import com.softserve.bookstoreapi.model.generaEntities.SoftDeletableEntity;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -39,6 +40,8 @@ public class Order extends SoftDeletableEntity {
     private BigDecimal totalAmount;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Valid
+    @Size(min = 1, message = "{validation.order.items.size}")
     private List<OrderItem> items = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
