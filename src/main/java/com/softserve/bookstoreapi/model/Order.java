@@ -4,6 +4,7 @@ import com.softserve.bookstoreapi.model.enums.OrderStatus;
 import com.softserve.bookstoreapi.model.enums.PaymentMethod;
 import com.softserve.bookstoreapi.model.generaEntities.SoftDeletableEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,25 +19,22 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(
-        name = "order",
+@Table(name = "orders",
         indexes = {
-                @Index(name = "idx_order_user_created_desc", columnList = "user_id, created_at DESC"),
-                @Index(name = "idx_order_status_active", columnList = "status, active"),
-                @Index(name = "idx_order_promo_active", columnList = "promo_code_id, active"),
-                @Index(name = "idx_order_total_amount_status", columnList = "total_amount, status")
-        }
-)
+                @Index(name = "idx_orders_account_created_desc", columnList = "account_id, created_at DESC"),
+                @Index(name = "idx_orders_status_active", columnList = "status, is_active")})
 public class Order extends SoftDeletableEntity {
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "account_id")
     private User user;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private OrderStatus status;
 
+    @NotNull(message = "{validation.order.totalamount.notnull}")
+    @DecimalMin(value = "0.0", message = "{validation.order.totalamount.min}")
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 

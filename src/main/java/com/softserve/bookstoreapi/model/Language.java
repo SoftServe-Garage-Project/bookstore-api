@@ -14,22 +14,16 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(
-        name = "language",
-        indexes = {
-                @Index(name = "idx_language_code", columnList = "code"),
-                @Index(name = "idx_language_active", columnList = "active")
-        }
-)
+@Table(name = "language")
 public class Language extends SoftDeletableEntity {
 
-    @NotBlank(message = "Код мови обов'язковий")
-    @Size(min = 2, max = 10, message = "Код мови повинен містити від 2 до 10 символів")
+    @NotBlank(message = "{validation.language.code.notblank}")
+    @Size(min = 2, max = 10, message = "{validation.language.code.size}")
     @Column(nullable = false, unique = true, length = 10)
     private String code;
 
-    @NotBlank(message = "Назва мови обов'язкова")
-    @Size(min = 2, max = 100, message = "Назва мови повинна містити від 2 до 100 символів")
+    @NotBlank(message = "{validation.language.name.notblank}")
+    @Size(min = 2, max = 100, message = "{validation.language.name.size}")
     @Column(nullable = false, length = 100)
     private String name;
 }

@@ -3,7 +3,6 @@ package com.softserve.bookstoreapi.model.generaEntities;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -11,12 +10,9 @@ import java.time.LocalDateTime;
 public abstract class SoftDeletableEntity extends AuditableEntity {
 
     @Column(nullable = false)
-    private Boolean active = true;
-
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    private Boolean isActive = true;
 
     public boolean isDeleted() {
-        return !active || deletedAt != null;
+        return !isActive;
     }
 }

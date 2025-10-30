@@ -2,6 +2,7 @@ package com.softserve.bookstoreapi.model;
 
 import com.softserve.bookstoreapi.model.generaEntities.BaseEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,19 +14,20 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(
-        name = "cart_items",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "book_id"})
+        name = "cart_item",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"account_id", "book_id"})
 )
 public class CartItem extends BaseEntity {
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "account_id")
     private User user;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "book_id")
     private Book book;
 
+    @Min(value = 1, message = "{validation.cartitem.quantity.min}")
     @Column(nullable = false)
     private Integer quantity = 1;
 }

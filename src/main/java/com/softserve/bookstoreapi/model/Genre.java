@@ -14,17 +14,11 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(
-        name = "genre",
-        indexes = {
-                @Index(name = "idx_genre_name", columnList = "name"),
-                @Index(name = "idx_genre_active", columnList = "active")
-        }
-)
+@Table(name = "genre")
 public class Genre extends SoftDeletableEntity {
 
-    @NotBlank(message = "Назва жанру обов'язкова")
-    @Size(min = 2, max = 100, message = "Назва жанру повинна містити від 2 до 100 символів")
+    @NotBlank(message = "{validation.genre.name.notblank}")
+    @Size(min = 2, max = 100, message = "{validation.genre.name.size}")
     @Column(nullable = false, unique = true, length = 100)
     private String name;
 

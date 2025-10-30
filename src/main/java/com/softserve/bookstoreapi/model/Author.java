@@ -14,23 +14,16 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(
-        name = "author",
-        indexes = {
-                @Index(name = "idx_author_name_composite", columnList = "last_name, first_name"),
-                @Index(name = "idx_author_country_active", columnList = "country, active"),
-                @Index(name = "idx_author_active", columnList = "active")
-        }
-)
+@Table(name = "author")
 public class Author extends SoftDeletableEntity {
 
-    @NotBlank(message = "Ім'я автора обов'язкове")
-    @Size(min = 2, max = 100, message = "Ім'я повинно містити від 2 до 100 символів")
+    @NotBlank(message = "{validation.author.firstname.notblank}")
+    @Size(min = 2, max = 100, message = "{validation.author.firstname.size}")
     @Column(name = "first_name", nullable = false, length = 100)
     private String firstName;
 
-    @NotBlank(message = "Прізвище автора обов'язкове")
-    @Size(min = 2, max = 100, message = "Прізвище повинно містити від 2 до 100 символів")
+    @NotBlank(message = "{validation.author.lastname.notblank}")
+    @Size(min = 2, max = 100, message = "{validation.author.lastname.size}")
     @Column(name = "last_name", nullable = false, length = 100)
     private String lastName;
 

@@ -3,8 +3,7 @@ package com.softserve.bookstoreapi.model;
 import com.softserve.bookstoreapi.model.enums.UserRole;
 import com.softserve.bookstoreapi.model.generaEntities.SoftDeletableEntity;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,40 +23,38 @@ import java.util.Set;
 @NoArgsConstructor
 @Entity
 @Table(
-        name = "user",
-        uniqueConstraints = {@UniqueConstraint(name = "uq_user_email", columnNames = "email")},
-        indexes = {
-                @Index(name = "idx_user_email_active", columnList = "email, active"),
-                @Index(name = "idx_user_username_active", columnList = "username, active"),
-                @Index(name = "idx_user_role_active", columnList = "role, active"),
-                @Index(name = "idx_user_balance_active", columnList = "balance, active"),
-                @Index(name = "idx_user_role_created_desc", columnList = "role, created_at DESC")
-        }
+        name = "accounts",
+        uniqueConstraints = {@UniqueConstraint(name = "uq_accounts_email", columnNames = "email")},
+        indexes = {@Index(name = "idx_accounts_email_active", columnList = "email, is_active")}
 )
 public class User extends SoftDeletableEntity {
 
+    @NotBlank(message = "{validation.user.username.notblank}")
+    @Size(min = 3, max = 100, message = "{validation.user.username.size}")
     @Column(nullable = false, length = 100)
-    @NotBlank(message = "Username cannot be null or empty")
     private String username;
 
+    @NotBlank(message = "{validation.user.email.notblank}")
+    @Email(message = "{validation.user.email.invalid}")
+    @Size(max = 150, message = "{validation.user.email.size}")
     @Column(nullable = false, length = 150)
-    @NotBlank(message = "Email cannot be null or empty")
-    @Email(message = "Invalid email format")
     private String email;
 
+    @NotBlank(message = "{validation.user.password.notblank}")
+    @Size(min = 8, max = 255, message = "{validation.user.password.size}")
     @Column(nullable = false)
-    @NotBlank(message = "Password cannot be null or empty")
     private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private UserRole role = UserRole.ROLE_CUSTOMER;
 
+    @DecimalMin(value = "0.0", message = "{validation.user.balance.min}")
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
 
     @ElementCollection(fetch = FetchType.LAZY, targetClass = String.class)
-    @CollectionTable(name = "user_permissions", joinColumns = @JoinColumn(name = "user_id"))
+    @CollectionTable(name = "account_permissions", joinColumns = @JoinColumn(name = "account_id"))
     @Column(name = "permission", length = 50)
     private List<String> permissions = new ArrayList<>();
 
