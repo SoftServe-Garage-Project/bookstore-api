@@ -1,6 +1,6 @@
 package com.softserve.bookstoreapi.model;
 
-import com.softserve.bookstoreapi.model.generaEntities.SoftDeletableEntity;
+import com.softserve.bookstoreapi.model.generaEntities.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -13,8 +13,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "age_group")
-public class AgeGroup extends SoftDeletableEntity {
+@Table(name = "age_groups")
+public class AgeGroup extends BaseEntity {
 
     @NotBlank(message = "{validation.agegroup.name.notblank}")
     @Size(min = 2, max = 50, message = "{validation.agegroup.name.size}")

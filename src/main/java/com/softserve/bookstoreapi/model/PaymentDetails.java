@@ -19,15 +19,15 @@ public class PaymentDetails extends AuditableEntity {
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = false)
-    private User user;
+    private Account account;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false, length = 20)
     private PaymentMethod paymentMethod;
 
-    @Size(min = 4, max = 20, message = "{validation.paymentdetails.cardnumber.size}")
-    @Column(name = "card_number", length = 20)
-    private String cardNumber;
+    @Size(min = 4, max = 4, message = "{validation.paymentdetails.last4digits.size}")
+    @Column(name = "card_last_4_digits", length = 4)
+    private String cardLast4Digits;
 
     @Size(max = 100, message = "{validation.paymentdetails.cardholder.size}")
     @Column(name = "card_holder_name", length = 100)
