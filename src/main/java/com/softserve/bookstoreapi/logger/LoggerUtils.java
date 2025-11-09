@@ -7,18 +7,21 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class LoggerUtils {
 
-    public void logRegistrationSuccess(String email) {
-        log.info("Successful registration for ({})", maskEmail(email));
-    }
+    /**
+     * Obfuscates sensitive data by replacing 80% of the string with asterisks.
+     * Only the first 20% of characters remain visible.
+     *
+     * @param data the string to obfuscate
+     * @return obfuscated string with 80% replaced by asterisks
+     */
+    public static String obfuscate(String data) {
+        if (data == null || data.isEmpty()) {
+            return data;
+        }
 
-    public void logRegistrationFailure(String email, String reason) {
-        log.warn("Failed registration attempt for ({}): {}", maskEmail(email), reason);
-    }
+        int visibleLength = (int) Math.ceil(data.length() * 0.2);
+        int obfuscatedLength = data.length() - visibleLength;
 
-    private String maskEmail(String email) {
-        if (email == null) return "unknown";
-        int atIndex = email.indexOf("@");
-        if (atIndex <= 1) return "***";
-        return email.substring(0, Math.min(3, atIndex)) + "***" + email.substring(atIndex);
+        return data.substring(0, visibleLength) + "*".repeat(obfuscatedLength);
     }
 }

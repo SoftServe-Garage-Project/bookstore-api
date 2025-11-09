@@ -28,8 +28,4 @@ public class UserRegisterRequestDTO {
     @NotBlank(message = "{validation.user.password.notblank}")
     @Size(min = 8, max = 255, message = "{validation.user.password.size}")
     private String password;
-
-    @NotBlank(message = "{validation.user.password.notblank}")
-    @Size(min = 8, max = 255, message = "{validation.user.password.size}")
-    private String confirmPassword;
 }

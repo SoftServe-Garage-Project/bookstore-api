@@ -1,9 +1,6 @@
 package com.softserve.bookstoreapi.controllerAdvise;
 
 import com.softserve.bookstoreapi.exception.EmailAlreadyExistsException;
-import com.softserve.bookstoreapi.exception.PasswordMismatchException;
-import com.softserve.bookstoreapi.logger.LoggerUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +13,11 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.softserve.bookstoreapi.logger.LoggerUtils.obfuscate;
+
 @Slf4j
-@RequiredArgsConstructor
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    private final LoggerUtils loggerUtils;
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
@@ -46,8 +42,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
-        loggerUtils.logRegistrationFailure(ex.getEmail(), "Email already exists");
-
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.CONFLICT.value())
@@ -55,21 +49,8 @@ public class GlobalExceptionHandler {
                 .errorCode(ex.getMessage())
                 .build();
 
-        log.warn("Email already exists: {}", ex.getEmail());
+        log.warn("Registration failed - email already exists: {}", obfuscate(ex.getEmail()));
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
-    }
-    @ExceptionHandler(PasswordMismatchException.class)
-    public ResponseEntity<ErrorResponse> handlePasswordMismatch(PasswordMismatchException ex) {
-        loggerUtils.logRegistrationFailure(ex.getEmail(), "Password mismatch");
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Password Mismatch")
-                .errorCode(ex.getErrorCode())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
 
