@@ -35,7 +35,7 @@ public class SecurityConfig {
                         // Error page
                         .requestMatchers("/error").permitAll()
                         // All other requests require authentication
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 );
 
         return http.build();

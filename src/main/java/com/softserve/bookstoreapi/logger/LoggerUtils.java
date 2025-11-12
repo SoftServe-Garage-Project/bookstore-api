@@ -1,11 +1,10 @@
 package com.softserve.bookstoreapi.logger;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+public final class LoggerUtils {
 
-@Component
-@Slf4j
-public class LoggerUtils {
+    private LoggerUtils() {
+        throw new UnsupportedOperationException("Utility class");
+    }
 
     /**
      * Obfuscates sensitive data by replacing 80% of the string with asterisks.
