@@ -3,7 +3,7 @@ package com.softserve.bookstoreapi.service.impl;
 import com.softserve.bookstoreapi.dto.UserRegisterRequestDTO;
 import com.softserve.bookstoreapi.dto.UserRegisterResponseDTO;
 import com.softserve.bookstoreapi.exception.EmailAlreadyExistsException;
-import com.softserve.bookstoreapi.model.User;
+import com.softserve.bookstoreapi.model.Account;
 import com.softserve.bookstoreapi.model.enums.UserRole;
 import com.softserve.bookstoreapi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +17,10 @@ import java.math.BigDecimal;
 
 import static com.softserve.bookstoreapi.logger.LoggerUtils.obfuscate;
 
-@Slf4j
 @Service
+@Slf4j
 @RequiredArgsConstructor
-public class UserService {
+public class AccountService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final ModelMapper mapper;
@@ -31,15 +31,15 @@ public class UserService {
             throw new EmailAlreadyExistsException("error.email.already.exists", requestDTO.getEmail());
         }
 
-        User user = new User();
-        user.setUsername(requestDTO.getUsername());
-        user.setEmail(requestDTO.getEmail());
-        user.setPassword(passwordEncoder.encode(requestDTO.getPassword()));
-        user.setRole(UserRole.ROLE_CUSTOMER);
-        user.setBalance(BigDecimal.ZERO);
+        Account account = new Account();
+        account.setUsername(requestDTO.getUsername());
+        account.setEmail(requestDTO.getEmail());
+        account.setPassword(passwordEncoder.encode(requestDTO.getPassword()));
+        account.setRole(UserRole.ROLE_CUSTOMER);
+        account.setBalance(BigDecimal.ZERO);
 
-        User savedUser = userRepository.save(user);
+        Account savedAccount = userRepository.save(account);
         log.info("Successful registration for email: {}", obfuscate(requestDTO.getEmail()));
-        return mapper.map(savedUser, UserRegisterResponseDTO.class);
+        return mapper.map(savedAccount, UserRegisterResponseDTO.class);
     }
 }

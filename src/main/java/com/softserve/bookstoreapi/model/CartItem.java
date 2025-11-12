@@ -14,14 +14,14 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(
-        name = "cart_item",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"account_id", "book_id"})
+        name = "cart_items",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"order_id", "book_id"})
 )
 public class CartItem extends BaseEntity {
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "account_id")
-    private User user;
+    @JoinColumn(name = "order_id")
+    private Order order;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "book_id")

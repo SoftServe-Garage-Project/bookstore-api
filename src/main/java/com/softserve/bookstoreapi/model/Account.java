@@ -28,7 +28,7 @@ import java.util.Set;
         uniqueConstraints = {@UniqueConstraint(name = "uq_accounts_email", columnNames = "email")},
         indexes = {@Index(name = "idx_accounts_email_active", columnList = "email, is_active")}
 )
-public class User extends SoftDeletableEntity {
+public class Account extends SoftDeletableEntity {
 
     @NotBlank(message = "{validation.user.username.notblank}")
     @Size(min = 3, max = 100, message = "{validation.user.username.size}")
@@ -67,3 +67,4 @@ public class User extends SoftDeletableEntity {
         return authorities;
     }
 }
+

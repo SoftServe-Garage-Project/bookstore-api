@@ -14,7 +14,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "author")
+@Table(name = "authors")
 public class Author extends SoftDeletableEntity {
 
     @NotBlank(message = "{validation.author.firstname.notblank}")

@@ -18,16 +18,16 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "transaction", indexes = {@Index(name = "idx_transactions_sender_created_desc", columnList = "sender_account_id, created_at DESC")})
+@Table(name = "transactions", indexes = {@Index(name = "idx_transactions_sender_created_desc", columnList = "sender_account_id, created_at DESC")})
 public class Transaction extends AuditableEntity {
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_account_id", nullable = false)
-    private User sender;
+    private Account sender;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_account_id")
-    private User receiver;
+    private Account receiver;
 
     @DecimalMin(value = "0.0", message = "{validation.transaction.amount.min}")
     @Column(nullable = false, precision = 10, scale = 2)
