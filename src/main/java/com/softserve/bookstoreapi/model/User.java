@@ -1,5 +1,6 @@
 package com.softserve.bookstoreapi.model;
 
+import com.softserve.bookstoreapi.model.enums.Permissions;
 import com.softserve.bookstoreapi.model.enums.UserRole;
 import com.softserve.bookstoreapi.model.generaEntities.SoftDeletableEntity;
 import jakarta.persistence.*;
@@ -53,15 +54,16 @@ public class User extends SoftDeletableEntity {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
 
-    @ElementCollection(fetch = FetchType.LAZY, targetClass = String.class)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "account_permissions", joinColumns = @JoinColumn(name = "account_id"))
+    @Enumerated(EnumType.STRING)
     @Column(name = "permission", length = 50)
-    private List<String> permissions = new ArrayList<>();
+    private List<Permissions> permissions = new ArrayList<>();
 
     public Set<GrantedAuthority> getAuthorities() {
         Set<GrantedAuthority> authorities = new HashSet<>();
         authorities.add(new SimpleGrantedAuthority(role.name()));
-        permissions.forEach(perm -> authorities.add(new SimpleGrantedAuthority(perm)));
+        authorities.addAll(permissions);
         return authorities;
     }
 }
