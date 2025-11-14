@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class RegistrationController {
     private final AccountService accountService;
 
+    @PostMapping
     public ResponseEntity<UserRegisterResponseDTO> register(@Valid @RequestBody UserRegisterRequestDTO requestDTO) {
         UserRegisterResponseDTO registeredUser = accountService.registerUser(requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
