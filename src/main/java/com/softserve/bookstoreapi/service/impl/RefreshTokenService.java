@@ -1,5 +1,6 @@
 package com.softserve.bookstoreapi.service.impl;
 
+import com.softserve.bookstoreapi.exception.RefreshTokenStorageException;
 import com.softserve.bookstoreapi.model.RefreshToken;
 import com.softserve.bookstoreapi.repository.RefreshTokenRepository;
 import com.softserve.bookstoreapi.security.Token;
@@ -37,7 +38,11 @@ public class RefreshTokenService {
         } catch (DataIntegrityViolationException e) {
             log.error("Failed to save refresh token (possible duplicate) for user: {}. Token ID: {}",
                     token.subject(), token.id());
-            throw new IllegalStateException("Failed to store refresh token", e);
+            throw new RefreshTokenStorageException("Failed to store refresh token", e);
+        } catch (Exception e) {
+            log.error("Unexpected error while saving refresh token for user: {}. Token ID: {}",
+                    token.subject(), token.id(), e);
+            throw new RefreshTokenStorageException("Failed to store refresh token due to unexpected error", e);
         }
     }
 }

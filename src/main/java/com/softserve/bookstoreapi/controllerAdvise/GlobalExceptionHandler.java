@@ -1,6 +1,8 @@
 package com.softserve.bookstoreapi.controllerAdvise;
 
 import com.softserve.bookstoreapi.exception.EmailAlreadyExistsException;
+import com.softserve.bookstoreapi.exception.RefreshTokenStorageException;
+import com.softserve.bookstoreapi.exception.TokenSerializationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +10,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -55,6 +58,45 @@ public class GlobalExceptionHandler {
 
         log.warn("Registration failed - email already exists: {}", obfuscate(ex.getEmail()));
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(SessionAuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleSessionAuthenticationException(SessionAuthenticationException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("Authentication Session Failed")
+                .errorCode("error.auth.session.failed")
+                .build();
+
+        log.error("Session authentication failed: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    @ExceptionHandler(TokenSerializationException.class)
+    public ResponseEntity<ErrorResponse> handleTokenSerializationException(TokenSerializationException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("Token Generation Failed")
+                .errorCode("error.token.serialization.failed")
+                .build();
+
+        log.error("Failed to serialize token: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    @ExceptionHandler(RefreshTokenStorageException.class)
+    public ResponseEntity<ErrorResponse> handleRefreshTokenStorageException(RefreshTokenStorageException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("Failed to Store Refresh Token")
+                .errorCode("error.refresh.token.storage.failed")
+                .build();
+
+        log.error("Refresh token storage failed: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -122,4 +164,5 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 }
+
 
