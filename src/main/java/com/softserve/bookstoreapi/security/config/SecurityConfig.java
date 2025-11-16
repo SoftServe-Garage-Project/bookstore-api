@@ -35,7 +35,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/genres/**").permitAll()
                         .requestMatchers("/api/age-groupsAdd/**").permitAll()
                         .requestMatchers("/api/language/**").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers("/api/books/**").permitAll()
+                        .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
