@@ -66,28 +66,36 @@ public class BookService {
     }
 
 
-    public Page<BookDTO> getBooks(String genreName, Pageable pageable) {
-
+    public Page<BookDTO> getBooks(String genreName, String title, Pageable pageable) {
+        if (genreName != null) genreName = genreName.trim();
+        if (title != null) title = title.trim();
         Page<Book> books;
 
-        // если жанр не передан → просто вернуть все книги
-        if (genreName == null || genreName.isBlank()) {
-            books = bookRepository.findAll(pageable);
-        } else {
-            // ищем жанр по имени
-            Genre genre = genreRepository.findByNameIgnoreCase(genreName)
-                    .orElse(null);
-
-            if (genre == null) {
-                // жанра нет → вернуть пустую страницу
-                return Page.empty(pageable);
-            }
-
-            // фильтрация по найденному genreId
+        // 1 title is empty --> findByGenre
+        if ((title == null || title.isBlank()) && genreName != null && !genreName.isBlank()) {
+            Genre genre = genreRepository.findByNameIgnoreCase(genreName).orElse(null);
+            if (genre == null) return Page.empty(pageable);
             books = bookRepository.findByGenreId(genre.getId(), pageable);
         }
+        // 2 genre is empty, FindByTittle
+        else if ((genreName == null || genreName.isBlank()) && title != null && !title.isBlank()) {
+            books = bookRepository.findByTitleContainingIgnoreCase(title, pageable);
+        }
+        // 3. both is not empty
+        else if (title != null && !title.isBlank() && genreName != null && !genreName.isBlank()) {
+            Genre genre = genreRepository.findByNameIgnoreCase(genreName).orElse(null);
+            if (genre == null) return Page.empty(pageable);
 
-        // Преобразуем Page<Book> → Page<BookDTO>
+            books = bookRepository.findByTitleContainingIgnoreCaseAndGenreId(title, genre.getId(), pageable);
+
+            // If a name match is found, but the genre does not match → blank page
+            if (books.isEmpty()) return Page.empty(pageable);
+        }
+        // 4 tittle = empty genre = empty
+        else {
+            books = bookRepository.findAll(pageable);
+        }
+
         return books.map(BookMapper::toDto);
     }
 }

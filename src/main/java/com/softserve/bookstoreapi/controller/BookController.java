@@ -25,8 +25,9 @@ public class BookController {
     @GetMapping("/api/book")
     public Page<BookDTO> getBooks(
             @RequestParam(required = false) String genreName,
+            @RequestParam(required = false) String title,
             Pageable pageable
     ) {
-        return bookService.getBooks(genreName, pageable);
+        return bookService.getBooks(genreName,title ,pageable);
     }
 }
