@@ -1,6 +1,7 @@
 package com.softserve.bookstoreapi.service;
 
 import com.softserve.bookstoreapi.DTO.BookDTO;
+import com.softserve.bookstoreapi.mapper.BookMapper;
 import com.softserve.bookstoreapi.model.*;
 import com.softserve.bookstoreapi.repository.*;
 import jakarta.transaction.Transactional;
@@ -65,11 +66,28 @@ public class BookService {
     }
 
 
-    public Page<Book> getBooksByNames(String genreName, String authorName,
-                                      String ageGroupName, String languageName,
-                                      String keyword, Pageable pageable) {
-        return bookRepository.findFilteredBooks(
-                genreName, authorName, ageGroupName, languageName, keyword, pageable
-        );
+    public Page<BookDTO> getBooks(String genreName, Pageable pageable) {
+
+        Page<Book> books;
+
+        // если жанр не передан → просто вернуть все книги
+        if (genreName == null || genreName.isBlank()) {
+            books = bookRepository.findAll(pageable);
+        } else {
+            // ищем жанр по имени
+            Genre genre = genreRepository.findByNameIgnoreCase(genreName)
+                    .orElse(null);
+
+            if (genre == null) {
+                // жанра нет → вернуть пустую страницу
+                return Page.empty(pageable);
+            }
+
+            // фильтрация по найденному genreId
+            books = bookRepository.findByGenreId(genre.getId(), pageable);
+        }
+
+        // Преобразуем Page<Book> → Page<BookDTO>
+        return books.map(BookMapper::toDto);
     }
 }

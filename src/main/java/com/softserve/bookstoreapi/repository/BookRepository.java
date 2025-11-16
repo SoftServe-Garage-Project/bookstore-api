@@ -15,24 +15,7 @@ import java.util.Optional;
 public interface BookRepository extends JpaRepository<Book, Long> {
     Optional<Book> findById(Long id);
 
-    @Query("""
-    SELECT b FROM Book b
-    WHERE (:genreName IS NULL OR LOWER(b.genre.name) = LOWER(:genreName))
-      AND (:authorName IS NULL OR EXISTS (
-            SELECT a FROM b.authors a 
-            WHERE LOWER(CONCAT(a.firstName, ' ', a.lastName)) = LOWER(:authorName)))
-      AND (:ageGroupName IS NULL OR LOWER(b.ageGroup.name) = LOWER(:ageGroupName))
-      AND (:languageName IS NULL OR LOWER(b.language.name) = LOWER(:languageName))
-      AND (:keyword IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
-           OR LOWER(b.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
-""")
-    Page<Book> findFilteredBooks(
-            @Param("genreName") String genreName,
-            @Param("authorName") String authorName,
-            @Param("ageGroupName") String ageGroupName,
-            @Param("languageName") String languageName,
-            @Param("keyword") String keyword,
-            Pageable pageable
-    );
+
+    Page<Book> findByGenreId(Long genreId, Pageable pageable);
 }
 

@@ -23,14 +23,10 @@ public class BookController {
         return ResponseEntity.ok(created);
     }
     @GetMapping("/api/book")
-    public Page<Book> getBooks(
+    public Page<BookDTO> getBooks(
             @RequestParam(required = false) String genreName,
-            @RequestParam(required = false) String authorName,
-            @RequestParam(required = false) String ageGroupName,
-            @RequestParam(required = false) String languageName,
-            @RequestParam(required = false) String keyword,
             Pageable pageable
     ) {
-        return bookService.getBooksByNames(genreName, authorName, ageGroupName, languageName, keyword, pageable);
+        return bookService.getBooks(genreName, pageable);
     }
 }
