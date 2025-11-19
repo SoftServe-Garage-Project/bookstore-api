@@ -35,133 +35,79 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
 
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Validation Failed")
-                .errorCode("error.validation.failed")
-                .validationErrors(errors)
-                .build();
-
         log.warn("Validation failed: {}", errors);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation Failed", "error.validation.failed", errors);
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Email Already Exists")
-                .errorCode(ex.getMessage())
-                .build();
-
         log.warn("Registration failed - email already exists: {}", obfuscate(ex.getEmail()));
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        return buildErrorResponse(HttpStatus.CONFLICT, "Email Already Exists", ex.getMessage());
     }
 
     @ExceptionHandler(SessionAuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleSessionAuthenticationException(SessionAuthenticationException ex) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Authentication Session Failed")
-                .errorCode("error.auth.session.failed")
-                .build();
-
         log.error("Session authentication failed: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Authentication Session Failed", "error.auth.session.failed");
     }
 
     @ExceptionHandler(TokenSerializationException.class)
     public ResponseEntity<ErrorResponse> handleTokenSerializationException(TokenSerializationException ex) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Token Generation Failed")
-                .errorCode("error.token.serialization.failed")
-                .build();
-
         log.error("Failed to serialize token: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Token Generation Failed", "error.token.serialization.failed");
     }
 
     @ExceptionHandler(RefreshTokenStorageException.class)
     public ResponseEntity<ErrorResponse> handleRefreshTokenStorageException(RefreshTokenStorageException ex) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Failed to Store Refresh Token")
-                .errorCode("error.refresh.token.storage.failed")
-                .build();
-
         log.error("Refresh token storage failed: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Store Refresh Token", "error.refresh.token.storage.failed");
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.UNAUTHORIZED.value())
-                .error("Invalid Credentials")
-                .errorCode("error.auth.invalid.credentials")
-                .build();
-
         log.warn("Authentication failed - invalid credentials");
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid Credentials", "error.auth.invalid.credentials");
     }
 
     @ExceptionHandler(LockedException.class)
     public ResponseEntity<ErrorResponse> handleLockedException(LockedException ex) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.UNAUTHORIZED.value())
-                .error("Account Locked")
-                .errorCode("error.auth.account.locked")
-                .build();
-
         log.warn("Authentication failed - account locked");
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Account Locked", "error.auth.account.locked");
     }
 
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<ErrorResponse> handleDisabledException(DisabledException ex) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.UNAUTHORIZED.value())
-                .error("Account Disabled")
-                .errorCode("error.auth.account.disabled")
-                .build();
-
         log.warn("Authentication failed - account disabled");
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Account Disabled", "error.auth.account.disabled");
     }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.UNAUTHORIZED.value())
-                .error("Authentication Failed")
-                .errorCode("error.auth.failed")
-                .build();
-
         log.warn("Authentication failed: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Authentication Failed", "error.auth.failed");
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        log.error("Unexpected error occurred", ex);
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "error.internal.server");
+    }
+
+    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String error, String errorCode) {
+        return buildErrorResponse(status, error, errorCode, null);
+    }
+
+    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String error, String errorCode,
+                                                             Map<String, String> validationErrors) {
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Internal Server Error")
-                .errorCode("error.internal.server")
+                .status(status.value())
+                .error(error)
+                .errorCode(errorCode)
+                .validationErrors(validationErrors)
                 .build();
 
-        log.error("Unexpected error occurred", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        return ResponseEntity.status(status).body(errorResponse);
     }
 }
 

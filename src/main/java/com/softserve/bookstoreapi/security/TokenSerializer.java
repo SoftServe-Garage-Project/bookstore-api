@@ -18,10 +18,10 @@ public class TokenSerializer {
 
     public String serialize(Token token) {
         var jwsHeader = new JWEHeader.Builder(this.jweAlgorithm, this.encryptionMethod)
-                .keyID(token.id().toString())
+                .keyID(token.tokenId().toString())
                 .build();
         var claimsSet = new JWTClaimsSet.Builder()
-                .jwtID(token.id().toString())
+                .jwtID(token.tokenId().toString())
                 .subject(token.subject())
                 .issueTime(Date.from(token.createdAt()))
                 .expirationTime(Date.from(token.expiresAt()))
@@ -33,7 +33,7 @@ public class TokenSerializer {
             return encryptedJWT.serialize();
         } catch (JOSEException exception) {
             log.error("Failed to serialize token with ID: {}. Error type: {}",
-                    token.id(), exception.getClass().getSimpleName());
+                    token.tokenId(), exception.getClass().getSimpleName());
             if (log.isDebugEnabled()) {
                 log.debug("Full stack trace:", exception);
             }

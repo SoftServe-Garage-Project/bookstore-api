@@ -10,4 +10,3 @@ public class RefreshTokenStorageException extends RuntimeException {
         super(message, cause);
     }
 }
-

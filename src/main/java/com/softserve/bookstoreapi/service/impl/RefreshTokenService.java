@@ -17,7 +17,6 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
-    @Transactional
     public void saveRefreshToken(Token token) {
         if (token == null) {
             throw new IllegalArgumentException("Token cannot be null");
@@ -26,7 +25,7 @@ public class RefreshTokenService {
         try {
             RefreshToken refreshToken = RefreshToken.builder()
                     .userEmail(token.subject())
-                    .tokenId(token.id())
+                    .tokenId(token.tokenId())
                     .createdAt(token.createdAt())
                     .expiresAt(token.expiresAt())
                     .used(false)
@@ -37,11 +36,11 @@ public class RefreshTokenService {
             log.debug("Successfully saved refresh token for user: {}", token.subject());
         } catch (DataIntegrityViolationException e) {
             log.error("Failed to save refresh token (possible duplicate) for user: {}. Token ID: {}",
-                    token.subject(), token.id());
+                    token.subject(), token.tokenId());
             throw new RefreshTokenStorageException("Failed to store refresh token", e);
         } catch (Exception e) {
             log.error("Unexpected error while saving refresh token for user: {}. Token ID: {}",
-                    token.subject(), token.id(), e);
+                    token.subject(), token.tokenId(), e);
             throw new RefreshTokenStorageException("Failed to store refresh token due to unexpected error", e);
         }
     }

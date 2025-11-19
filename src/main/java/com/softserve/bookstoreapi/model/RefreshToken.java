@@ -11,31 +11,29 @@ import java.util.UUID;
         @Index(name = "idx_refresh_token_user_email", columnList = "userEmail")
 })
 @Getter
-@Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class RefreshToken {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private String userEmail;
 
+    @Id
     @Column(nullable = false, unique = true)
     private UUID tokenId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private Instant expiresAt;
 
+    @Setter
     @Column(nullable = false)
     private boolean used = false;
 
+    @Setter
     @Column(nullable = false)
     private boolean revoked = false;
 }
