@@ -3,8 +3,12 @@ package com.softserve.bookstoreapi.security.config;
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.KeyLengthException;
+import com.nimbusds.jose.crypto.DirectDecrypter;
 import com.nimbusds.jose.crypto.DirectEncrypter;
 import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.softserve.bookstoreapi.repository.DeactivatedTokenRepository;
+import com.softserve.bookstoreapi.security.BearerTokenAuthenticationConfigurer;
+import com.softserve.bookstoreapi.security.TokenCookieJweStringDeserializer;
 import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +30,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
 
 import java.text.ParseException;
 import java.time.Duration;
@@ -36,18 +41,19 @@ import java.time.Duration;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, PublicUrlConfig publicUrlConfig,
+                                                   BearerTokenAuthenticationConfigurer bearerTokenAuthenticationConfigurer) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/register/**").permitAll()
-                        .requestMatchers("/api/login").permitAll()
-                        .requestMatchers("/error").permitAll()
-                        .anyRequest().authenticated())
+                .authorizeHttpRequests(authorizeHttpRequests ->
+                        authorizeHttpRequests
+                                .requestMatchers(publicUrlConfig.getRequestMatcher()).permitAll()
+                                .anyRequest().authenticated())
                 .sessionManagement(sessionManagement -> sessionManagement
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
+        bearerTokenAuthenticationConfigurer.configure(http);
         return http.build();
     }
 
@@ -85,7 +91,8 @@ public class SecurityConfig {
 
     @Bean
     public TokenFactory tokenFactory() {
-        return new TokenFactory(Duration.ofMinutes(30), Duration.ofHours(8));
+//        return new TokenFactory(Duration.ofMinutes(30), Duration.ofHours(8));
+        return new TokenFactory(Duration.ofMinutes(1), Duration.ofMinutes(5));
     }
 
     @Bean
@@ -96,5 +103,25 @@ public class SecurityConfig {
         authenticationProvider.setUserDetailsService(userDetailsService);
 
         return new ProviderManager(authenticationProvider);
+    }
+
+    @Bean
+    public BearerTokenAuthenticationConfigurer bearerTokenAuthenticationConfigurer(
+            TokenCookieJweStringDeserializer deserializer,
+            DeactivatedTokenRepository deactivatedTokenRepository,
+            PublicUrlConfig publicUrlConfig) {
+
+        return new BearerTokenAuthenticationConfigurer()
+                .tokenDeserializer(deserializer)
+                .deactivatedTokenRepository(deactivatedTokenRepository)
+                .requestMatcher(new NegatedRequestMatcher(publicUrlConfig.getRequestMatcher()));
+    }
+
+    @Bean
+    public TokenCookieJweStringDeserializer tokenCookieJweStringDeserializer(
+            @Value("${jwt.cookie-token-key}") String cookieTokenKey) throws Exception {
+        return new TokenCookieJweStringDeserializer(
+                new DirectDecrypter(OctetSequenceKey.parse(cookieTokenKey))
+        );
     }
 }

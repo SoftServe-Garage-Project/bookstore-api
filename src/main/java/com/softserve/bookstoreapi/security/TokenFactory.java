@@ -31,7 +31,6 @@ public class TokenFactory {
                 .filter(Objects::nonNull)
                 .map(GrantedAuthority::getAuthority)
                 .filter(auth -> auth != null && !auth.isBlank())
-                .map(auth -> auth.startsWith("ROLE_") ? auth : "ROLE_" + auth)
                 .toList();
 
         if (authorityList.isEmpty()) {

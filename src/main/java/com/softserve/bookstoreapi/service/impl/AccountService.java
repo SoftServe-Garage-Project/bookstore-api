@@ -8,9 +8,9 @@ import com.softserve.bookstoreapi.exception.EmailAlreadyExistsException;
 import com.softserve.bookstoreapi.model.Account;
 import com.softserve.bookstoreapi.model.enums.UserRole;
 import com.softserve.bookstoreapi.repository.AccountRepository;
-import com.softserve.bookstoreapi.security.TokenCookieSessionAuthenticationStrategy;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import com.softserve.bookstoreapi.security.Token;
+import com.softserve.bookstoreapi.security.TokenFactory;
+import com.softserve.bookstoreapi.security.TokenSerializer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,13 +34,15 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-    private final TokenCookieSessionAuthenticationStrategy tokenAuthenticationStrategy;
+    private final TokenFactory tokenFactory;
+    private final TokenSerializer tokenSerializer;
+    private final RefreshTokenService refreshTokenService;
 
     public Optional<Account> findByEmail(String email) {
         return accountRepository.findByEmail(email);
     }
 
-    public LoginResponseDTO login(LoginRequestDTO loginRequest, HttpServletRequest request, HttpServletResponse response) {
+    public LoginResponseDTO login(LoginRequestDTO loginRequest) {
         log.debug("Login attempt for user: {}", obfuscate(loginRequest.email()));
 
         Authentication authentication = authenticationManager.authenticate(
@@ -50,22 +52,30 @@ public class AccountService {
                 )
         );
 
-        log.info("Successfully authenticated user: {}", obfuscate(authentication.getName()));
+        log.info("User successfully authenticated: {}", obfuscate(authentication.getName()));
 
-        tokenAuthenticationStrategy.onAuthentication(authentication, request, response);
+        Token accessToken = tokenFactory.createAccessToken(authentication);
+        String accessTokenString = tokenSerializer.serialize(accessToken);
 
-        return buildLoginResponse(authentication);
+        Token refreshToken = tokenFactory.createRefreshToken(authentication);
+        String refreshTokenString = tokenSerializer.serialize(refreshToken);
+        
+        refreshTokenService.saveRefreshToken(refreshToken);
+
+        return buildLoginResponse(authentication, accessTokenString, refreshTokenString);
     }
 
-    private LoginResponseDTO buildLoginResponse(Authentication authentication) {
+
+    private LoginResponseDTO buildLoginResponse(Authentication authentication, String accessToken, String refreshToken) {
         List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
         return new LoginResponseDTO(
-                "Login successful",
                 authentication.getName(),
-                roles
+                roles,
+                accessToken,
+                refreshToken
         );
     }
 

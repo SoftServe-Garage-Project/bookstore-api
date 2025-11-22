@@ -1,9 +1,17 @@
 package com.softserve.bookstoreapi.controllerAdvise;
 
+import com.softserve.bookstoreapi.exception.AccessTokenExpiredException;
+import com.softserve.bookstoreapi.exception.AccountNotFoundException;
 import com.softserve.bookstoreapi.exception.EmailAlreadyExistsException;
+import com.softserve.bookstoreapi.exception.InsufficientPermissionsException;
+import com.softserve.bookstoreapi.exception.InvalidJwtToken;
+import com.softserve.bookstoreapi.exception.RefreshTokenExpiredException;
+import com.softserve.bookstoreapi.exception.RefreshTokenInvalidException;
 import com.softserve.bookstoreapi.exception.RefreshTokenStorageException;
+import com.softserve.bookstoreapi.exception.TokenDeactivatedException;
 import com.softserve.bookstoreapi.exception.TokenSerializationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -45,6 +53,12 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.CONFLICT, "Email Already Exists", ex.getMessage());
     }
 
+    @ExceptionHandler(AccountNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAccountNotFoundException(AccountNotFoundException ex) {
+        log.warn("Account not found: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "Account Not Found", "error.account.not.found");
+    }
+
     @ExceptionHandler(SessionAuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleSessionAuthenticationException(SessionAuthenticationException ex) {
         log.error("Session authentication failed: {}", ex.getMessage());
@@ -61,6 +75,43 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleRefreshTokenStorageException(RefreshTokenStorageException ex) {
         log.error("Refresh token storage failed: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Store Refresh Token", "error.refresh.token.storage.failed");
+    }
+
+    @ExceptionHandler(InvalidJwtToken.class)
+    public ResponseEntity<ErrorResponse> handleInvalidJwtToken(InvalidJwtToken ex) {
+        log.warn("Invalid JWT token: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid Token", "error.token.invalid");
+    }
+
+    @ExceptionHandler(AccessTokenExpiredException.class)
+    public ResponseEntity<ErrorResponse> handleAccessTokenExpired(AccessTokenExpiredException ex) {
+        log.debug("Access token expired. Token ID: {}", ex.getTokenId());
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Session Expired", "error.token.access.expired");
+    }
+
+    @ExceptionHandler(TokenDeactivatedException.class)
+    public ResponseEntity<ErrorResponse> handleTokenDeactivated(TokenDeactivatedException ex) {
+        log.debug("Token has been deactivated. Token ID: {}", ex.getTokenId());
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Token Deactivated", "error.token.deactivated");
+    }
+
+    @ExceptionHandler(RefreshTokenExpiredException.class)
+    public ResponseEntity<ErrorResponse> handleRefreshTokenExpired(RefreshTokenExpiredException ex) {
+        log.info("Refresh token expired. Token ID: {}", ex.getTokenId());
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Refresh Token Expired", "error.token.refresh.expired");
+    }
+
+    @ExceptionHandler(RefreshTokenInvalidException.class)
+    public ResponseEntity<ErrorResponse> handleRefreshTokenInvalid(RefreshTokenInvalidException ex) {
+        log.warn("Refresh token invalid. Token ID: {}, Reason: {}", ex.getTokenId(), ex.getReason());
+        String errorCode = "error.token.refresh.invalid." + ex.getReason();
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Refresh Token Invalid", errorCode);
+    }
+
+    @ExceptionHandler(InsufficientPermissionsException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientPermissions(InsufficientPermissionsException ex) {
+        log.warn("Insufficient permissions: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "Insufficient Permissions", "error.insufficient.permissions");
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -85,6 +136,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex) {
         log.warn("Authentication failed: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Authentication Failed", "error.auth.failed");
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+        log.warn("Invalid argument: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid Request", "error.invalid.argument");
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<ErrorResponse> handleDataAccessException(DataAccessException ex) {
+        log.error("Database access error: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.SERVICE_UNAVAILABLE, "Database Error", "error.database.access");
     }
 
     @ExceptionHandler(Exception.class)

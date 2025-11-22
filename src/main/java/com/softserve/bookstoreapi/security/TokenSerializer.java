@@ -32,11 +32,8 @@ public class TokenSerializer {
             encryptedJWT.encrypt(this.jweEncrypter);
             return encryptedJWT.serialize();
         } catch (JOSEException exception) {
-            log.error("Failed to serialize token with ID: {}. Error type: {}",
-                    token.tokenId(), exception.getClass().getSimpleName());
-            if (log.isDebugEnabled()) {
-                log.debug("Full stack trace:", exception);
-            }
+            log.error("Failed to serialize token with ID: {}. Error: {}",
+                    token.tokenId(), exception.getMessage());
             throw new TokenSerializationException("Failed to encrypt JWT token", exception);
         }
     }
