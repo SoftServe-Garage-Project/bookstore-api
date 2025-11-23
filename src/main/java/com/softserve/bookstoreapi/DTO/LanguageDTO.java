@@ -1,9 +1,7 @@
 package com.softserve.bookstoreapi.DTO;
-
 import lombok.Data;
 
-@Data
-public class LanguageDTO {
-    private String code;
-    private String name;
-}
+public record LanguageDTO(
+     String code,
+     String name
+){}

@@ -14,17 +14,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class LanguageService {
 
     private final LanguageRepository languageRepository;
-    public LanguageService(LanguageRepository languageRepository) {
+    public LanguageService(LanguageRepository languageRepository)
+    {
         this.languageRepository = languageRepository;
     }
-    public Language saveLanguage(LanguageDTO languageDTO) {
-       if(languageRepository.findByCodeIgnoreCase(languageDTO.getCode()).isPresent()){
-           throw new IllegalArgumentException("Age group with this name already exists.");
-       }
-        Language newLanguage = new Language();
-        newLanguage.setCode(languageDTO.getCode());
-        newLanguage.setName(languageDTO.getCode());
 
+    public Language saveLanguage(LanguageDTO languageDTO) {
+        Language newLanguage = new Language();
+        newLanguage.setCode(languageDTO.code());
+        newLanguage.setName(languageDTO.code());
         return languageRepository.save(newLanguage);
     }
 }

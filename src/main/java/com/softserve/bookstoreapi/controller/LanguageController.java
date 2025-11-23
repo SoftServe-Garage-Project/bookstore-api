@@ -1,6 +1,7 @@
 package com.softserve.bookstoreapi.controller;
 
 import com.softserve.bookstoreapi.DTO.LanguageDTO;
+import com.softserve.bookstoreapi.mapper.LanguageMapper;
 import com.softserve.bookstoreapi.model.Language;
 import com.softserve.bookstoreapi.repository.LanguageRepository;
 import com.softserve.bookstoreapi.service.LanguageService;
@@ -16,12 +17,10 @@ public class LanguageController {
     public LanguageController(LanguageService languageService) {
         this.languageService = languageService;
     }
-    @PostMapping("/api/language")
-    public ResponseEntity<Language> saveLanguage(@Valid @RequestBody LanguageDTO languageDTO) {
+
+    @PostMapping("/api/languages")
+    public ResponseEntity<LanguageDTO> saveLanguage(@Valid @RequestBody LanguageDTO languageDTO) {
         Language newLanguage = languageService.saveLanguage(languageDTO);
-        return ResponseEntity.ok().body(newLanguage);
-
-
+        return ResponseEntity.ok(LanguageMapper.toDto(newLanguage));
     }
-
 }

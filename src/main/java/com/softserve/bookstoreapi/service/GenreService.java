@@ -17,13 +17,9 @@ public class GenreService {
     }
 
     public Genre addGenre(GenreDTO genre){
-        genreRepository.findByNameIgnoreCase(genre.getName())
-                .ifPresent(g -> {
-                    throw new IllegalArgumentException("Genre with this name already exists");
-                });
         Genre newGenre = new Genre();
-        newGenre.setName(genre.getName());
-        newGenre.setDescription(genre.getDescription());
+        newGenre.setName(genre.name());
+        newGenre.setDescription(genre.description());
         return genreRepository.save(newGenre);
     }
 }

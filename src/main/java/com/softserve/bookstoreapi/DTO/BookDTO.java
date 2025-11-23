@@ -1,29 +1,42 @@
 package com.softserve.bookstoreapi.DTO;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.List;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class BookDTO {
-    private String title;
-    private String description;
-    private String genre;
-    private String ageGroup;
-    private Integer publishedYear;
-    private String languageCode;
-    private List<AuthorDTO> authors;
-    private BigDecimal price;
-    private Integer stockQuantity;
-    private BigDecimal discountPercentage;
-    private Integer pageCount;
-    private String coverImageUrl;
-}
+public record BookDTO(
+        @NotBlank @Size(min = 2, max = 255)
+        String title,
+
+        String description,
+
+        @NotBlank
+        String genre,
+
+        @NotBlank
+        String ageGroup,
+
+        @NotNull
+        Integer publishedYear,
+
+        @NotBlank
+        String languageCode,
+
+        @NotNull
+        List<AuthorDTO> authors,
+
+        @NotNull @DecimalMin("0.0")
+        BigDecimal price,
+
+        @NotNull @Min(0)
+        Integer stockQuantity,
+
+        @DecimalMin("0.0") @DecimalMax("100.0")
+        BigDecimal discountPercentage,
+
+        @Min(1)
+        Integer pageCount,
+
+        String coverImageUrl
+) {}
 

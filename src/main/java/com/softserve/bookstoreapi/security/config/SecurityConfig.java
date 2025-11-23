@@ -30,11 +30,11 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                .csrf(csrf -> csrf.disable())   // глобально для всего API
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/genres/**").permitAll()
-                        .requestMatchers("/api/age-groupsAdd/**").permitAll()
-                        .requestMatchers("/api/language/**").permitAll()
+                        .requestMatchers("/api/ageGroups/**").permitAll()
+                        .requestMatchers("/api/languages/**").permitAll()
                         .requestMatchers("/api/books/**").permitAll()
                         .anyRequest().permitAll()
                 )

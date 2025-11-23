@@ -2,7 +2,7 @@ package com.softserve.bookstoreapi.DTO;
 
 import jakarta.validation.constraints.*;
 
-public record AgeGroupDto(
+public record AgeGroupDTO(
         @NotBlank(message = "{validation.agegroup.name.notblank}")
         @Size(min = 2, max = 50, message = "{validation.agegroup.name.size}")
         String name,

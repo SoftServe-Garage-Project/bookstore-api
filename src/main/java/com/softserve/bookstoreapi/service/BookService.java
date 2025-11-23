@@ -25,31 +25,31 @@ public class BookService {
 
     @Transactional
     public Book createBook(BookDTO request) {
-        Genre genre = genreRepository.findByNameIgnoreCase(request.getGenre())
+        Genre genre = genreRepository.findByNameIgnoreCase(request.genre())
                 .orElseThrow(() -> new RuntimeException("Genre not found"));
-        AgeGroup ageGroup = ageGroupRepository.findByNameIgnoreCase(request.getAgeGroup())
+        AgeGroup ageGroup = ageGroupRepository.findByNameIgnoreCase(request.ageGroup())
                 .orElseThrow(() -> new RuntimeException("Age group not found"));
-        Language language = languageRepository.findByCodeIgnoreCase(request.getLanguageCode())
+        Language language = languageRepository.findByCodeIgnoreCase(request.languageCode())
                 .orElseThrow(() -> new RuntimeException("Language not found"));
 
         Book book = new Book();
-        book.setTitle(request.getTitle());
-        book.setDescription(request.getDescription());
+        book.setTitle(request.title());
+        book.setDescription(request.description());
         book.setGenre(genre);
         book.setAgeGroup(ageGroup);
-        book.setPublishedYear(request.getPublishedYear());
+        book.setPublishedYear(request.publishedYear());
         book.setLanguage(language);
-        book.setPrice(request.getPrice());
-        book.setStockQuantity(request.getStockQuantity());
-        book.setDiscountPercentage(request.getDiscountPercentage());
-        book.setPageCount(request.getPageCount());
-        book.setCoverImageUrl(request.getCoverImageUrl());
+        book.setPrice(request.price());
+        book.setStockQuantity(request.stockQuantity());
+        book.setDiscountPercentage(request.discountPercentage());
+        book.setPageCount(request.pageCount());
+        book.setCoverImageUrl(request.coverImageUrl());
 
-        List<Author> authors = request.getAuthors().stream()
+        List<Author> authors = request.authors().stream()
                 .map(a -> {
                     Author author = new Author();
-                    author.setFirstName(a.getFirstName());
-                    author.setLastName(a.getLastName());
+                    author.setFirstName(a.firstName());
+                    author.setLastName(a.lastName());
                     author.setBiography(null);
                     author.setCountry(null);
                     author.setPhotoUrl(null);
@@ -64,7 +64,6 @@ public class BookService {
     public List<Book> getAllBooks() {
         return bookRepository.findAll();
     }
-
 
     public Page<BookDTO> getBooks(String genreName, String title, Pageable pageable) {
         if (genreName != null) genreName = genreName.trim();
@@ -95,7 +94,6 @@ public class BookService {
         else {
             books = bookRepository.findAll(pageable);
         }
-
         return books.map(BookMapper::toDto);
     }
 }
