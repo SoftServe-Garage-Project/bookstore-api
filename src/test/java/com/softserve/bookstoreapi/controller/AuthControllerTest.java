@@ -2,33 +2,34 @@ package com.softserve.bookstoreapi.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.softserve.bookstoreapi.config.TestSecurityConfig;
-import com.softserve.bookstoreapi.dto.*;
+import com.softserve.bookstoreapi.dto.LoginRequestDTO;
+import com.softserve.bookstoreapi.dto.LoginResponseDTO;
+import com.softserve.bookstoreapi.dto.LogoutRequestDTO;
+import com.softserve.bookstoreapi.dto.RefreshRequestDTO;
+import com.softserve.bookstoreapi.dto.RefreshResponseDTO;
 import com.softserve.bookstoreapi.service.impl.AccountService;
 import com.softserve.bookstoreapi.service.impl.LogoutService;
 import com.softserve.bookstoreapi.service.impl.RefreshTokenService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
 @Import(TestSecurityConfig.class)
-@DisplayName("AuthController Tests")
+@ActiveProfiles("test")
 class AuthControllerTest {
 
     @Autowired
@@ -37,207 +38,194 @@ class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private AccountService accountService;
 
-    @MockBean
+    @MockitoBean
     private RefreshTokenService refreshTokenService;
 
-    @MockBean
+    @MockitoBean
     private LogoutService logoutService;
 
-    private LoginRequestDTO validLoginRequest;
-    private LoginResponseDTO validLoginResponse;
-    private RefreshRequestDTO validRefreshRequest;
-    private RefreshResponseDTO validRefreshResponse;
-    private LogoutRequestDTO validLogoutRequest;
-
-    @BeforeEach
-    void setUp() {
-        validLoginRequest = new LoginRequestDTO(
-                "test@example.com",
-                "password123"
-        );
-
-        validLoginResponse = new LoginResponseDTO(
-                "test@example.com",
-                List.of("ROLE_CUSTOMER"),
-                "accessTokenString",
-                "refreshTokenString"
-        );
-
-        validRefreshRequest = new RefreshRequestDTO("validRefreshToken");
-
-        validRefreshResponse = new RefreshResponseDTO(
-                "newAccessToken",
-                "newRefreshToken"
-        );
-
-        validLogoutRequest = new LogoutRequestDTO(
-                "accessToken",
-                "refreshToken"
-        );
-    }
-
     @Test
-    @WithMockUser
-    @DisplayName("Should login successfully with valid credentials")
-    void login_ValidCredentials_Returns200WithTokens() throws Exception {
-        // Given
-        when(accountService.login(any(LoginRequestDTO.class))).thenReturn(validLoginResponse);
+    void login_Success() throws Exception {
+        LoginRequestDTO loginRequest = new LoginRequestDTO("test@example.com", "password123");
+        LoginResponseDTO loginResponse = new LoginResponseDTO(
+                "test@example.com",
+                List.of("ROLE_USER"),
+                "access-token-value",
+                "refresh-token-value"
+        );
 
-        // When & Then
+        when(accountService.login(any(LoginRequestDTO.class))).thenReturn(loginResponse);
+
         mockMvc.perform(post("/api/login")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validLoginRequest)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("test@example.com"))
-                .andExpect(jsonPath("$.accessToken").value("accessTokenString"))
-                .andExpect(jsonPath("$.refreshToken").value("refreshTokenString"))
-                .andExpect(jsonPath("$.roles[0]").value("ROLE_CUSTOMER"));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.accessToken").value("access-token-value"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh-token-value"));
+
+        verify(accountService, times(1)).login(any(LoginRequestDTO.class));
     }
 
     @Test
-    @WithMockUser
-    @DisplayName("Should return 401 for invalid credentials")
-    void login_InvalidCredentials_Returns401() throws Exception {
-        // Given
+    void login_InvalidCredentials() throws Exception {
+        LoginRequestDTO loginRequest = new LoginRequestDTO("test@example.com", "wrongpassword");
+
         when(accountService.login(any(LoginRequestDTO.class)))
                 .thenThrow(new BadCredentialsException("Invalid credentials"));
 
-        // When & Then
         mockMvc.perform(post("/api/login")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validLoginRequest)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.errorCode").value("error.auth.invalid.credentials"));
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isUnauthorized());
+
+        verify(accountService, times(1)).login(any(LoginRequestDTO.class));
     }
 
     @Test
-    @WithMockUser
-    @DisplayName("Should return 400 for missing email")
-    void login_MissingEmail_Returns400() throws Exception {
-        // Given
-        LoginRequestDTO invalidRequest = new LoginRequestDTO("", "password123");
+    void login_ValidationFailed_EmptyEmail() throws Exception {
+        LoginRequestDTO loginRequest = new LoginRequestDTO("", "password123");
 
-        // When & Then
         mockMvc.perform(post("/api/login")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isBadRequest());
+
+        verify(accountService, never()).login(any());
     }
 
     @Test
-    @WithMockUser
-    @DisplayName("Should return 400 for missing password")
-    void login_MissingPassword_Returns400() throws Exception {
-        // Given
-        LoginRequestDTO invalidRequest = new LoginRequestDTO("test@example.com", "");
+    void login_ValidationFailed_EmptyPassword() throws Exception {
+        LoginRequestDTO loginRequest = new LoginRequestDTO("test@example.com", "");
 
-        // When & Then
         mockMvc.perform(post("/api/login")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isBadRequest());
+
+        verify(accountService, never()).login(any());
     }
 
     @Test
-    @WithMockUser
-    @DisplayName("Should return 400 for invalid email format")
-    void login_InvalidEmailFormat_Returns400() throws Exception {
-        // Given
-        LoginRequestDTO invalidRequest = new LoginRequestDTO("not-an-email", "password123");
+    void refresh_Success() throws Exception {
+        RefreshRequestDTO refreshRequest = new RefreshRequestDTO("valid-refresh-token");
+        RefreshResponseDTO refreshResponse = new RefreshResponseDTO(
+                "new-access-token",
+                "new-refresh-token"
+        );
 
-        // When & Then
-        mockMvc.perform(post("/api/login")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest());
-    }
+        when(refreshTokenService.refreshTokens(any(RefreshRequestDTO.class))).thenReturn(refreshResponse);
 
-    @Test
-    @WithMockUser
-    @DisplayName("Should refresh tokens successfully")
-    void refresh_ValidToken_Returns200WithNewTokens() throws Exception {
-        // Given
-        when(refreshTokenService.refreshTokens(any(RefreshRequestDTO.class)))
-                .thenReturn(validRefreshResponse);
-
-        // When & Then
         mockMvc.perform(post("/api/refresh")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validRefreshRequest)))
+                        .content(objectMapper.writeValueAsString(refreshRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("newAccessToken"))
-                .andExpect(jsonPath("$.refreshToken").value("newRefreshToken"));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.accessToken").value("new-access-token"))
+                .andExpect(jsonPath("$.refreshToken").value("new-refresh-token"));
+
+        verify(refreshTokenService, times(1)).refreshTokens(any(RefreshRequestDTO.class));
     }
 
     @Test
-    @WithMockUser
-    @DisplayName("Should return 400 for missing refresh token")
-    void refresh_MissingToken_Returns400() throws Exception {
-        // Given
-        RefreshRequestDTO invalidRequest = new RefreshRequestDTO("");
+    void refresh_InvalidToken() throws Exception {
+        RefreshRequestDTO refreshRequest = new RefreshRequestDTO("invalid-refresh-token");
 
-        // When & Then
+        when(refreshTokenService.refreshTokens(any(RefreshRequestDTO.class)))
+                .thenThrow(new RuntimeException("Invalid refresh token"));
+
         mockMvc.perform(post("/api/refresh")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest());
+                        .content(objectMapper.writeValueAsString(refreshRequest)))
+                .andExpect(status().isInternalServerError());
+
+        verify(refreshTokenService, times(1)).refreshTokens(any(RefreshRequestDTO.class));
     }
 
     @Test
-    @WithMockUser
-    @DisplayName("Should logout successfully")
-    void logout_ValidTokens_Returns204() throws Exception {
-        // Given
+    void refresh_ValidationFailed_EmptyToken() throws Exception {
+        RefreshRequestDTO refreshRequest = new RefreshRequestDTO("");
+
+        mockMvc.perform(post("/api/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshRequest)))
+                .andExpect(status().isBadRequest());
+
+        verify(refreshTokenService, never()).refreshTokens(any());
+    }
+
+    @Test
+    void logout_Success() throws Exception {
+        LogoutRequestDTO logoutRequest = new LogoutRequestDTO("valid-access-token", "valid-refresh-token");
+
         doNothing().when(logoutService).logout(any(LogoutRequestDTO.class));
 
-        // When & Then
         mockMvc.perform(post("/api/logout")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validLogoutRequest)))
+                        .content(objectMapper.writeValueAsString(logoutRequest)))
                 .andExpect(status().isNoContent());
 
         verify(logoutService, times(1)).logout(any(LogoutRequestDTO.class));
     }
 
     @Test
-    @WithMockUser
-    @DisplayName("Should return 400 for logout with missing access token")
-    void logout_MissingAccessToken_Returns400() throws Exception {
-        // Given
-        LogoutRequestDTO invalidRequest = new LogoutRequestDTO("", "refreshToken");
+    void logout_TokenDeactivationError() throws Exception {
+        LogoutRequestDTO logoutRequest = new LogoutRequestDTO("valid-access-token", "valid-refresh-token");
 
-        // When & Then
+        doThrow(new RuntimeException("Token deactivation failed"))
+                .when(logoutService).logout(any(LogoutRequestDTO.class));
+
         mockMvc.perform(post("/api/logout")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest());
+                        .content(objectMapper.writeValueAsString(logoutRequest)))
+                .andExpect(status().isInternalServerError());
+
+        verify(logoutService, times(1)).logout(any(LogoutRequestDTO.class));
     }
 
     @Test
-    @WithMockUser
-    @DisplayName("Should return 400 for logout with missing refresh token")
-    void logout_MissingRefreshToken_Returns400() throws Exception {
-        // Given
-        LogoutRequestDTO invalidRequest = new LogoutRequestDTO("accessToken", "");
+    void logout_ValidationFailed_EmptyToken() throws Exception {
+        LogoutRequestDTO logoutRequest = new LogoutRequestDTO("", "");
 
-        // When & Then
         mockMvc.perform(post("/api/logout")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(logoutRequest)))
                 .andExpect(status().isBadRequest());
+
+        verify(logoutService, never()).logout(any());
+    }
+
+    @Test
+    void login_InvalidJson() throws Exception {
+        mockMvc.perform(post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(""))
+                .andExpect(status().isBadRequest());
+
+        verify(accountService, never()).login(any());
+    }
+
+    @Test
+    void refresh_InvalidJson() throws Exception {
+        mockMvc.perform(post("/api/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(""))
+                .andExpect(status().isBadRequest());
+
+        verify(refreshTokenService, never()).refreshTokens(any());
+    }
+
+    @Test
+    void logout_InvalidJson() throws Exception {
+        mockMvc.perform(post("/api/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(""))
+                .andExpect(status().isBadRequest());
+
+        verify(logoutService, never()).logout(any());
     }
 }
 

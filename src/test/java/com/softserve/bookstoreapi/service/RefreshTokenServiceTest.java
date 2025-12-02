@@ -18,7 +18,6 @@ import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
 import com.softserve.bookstoreapi.service.impl.RefreshTokenService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -39,7 +38,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("RefreshTokenService Unit Tests")
 class RefreshTokenServiceTest {
 
     @Mock
@@ -96,26 +94,19 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    @DisplayName("Should save refresh token successfully")
     void saveRefreshToken_Success() {
-        // Given
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(storedRefreshToken);
 
-        // When
         refreshTokenService.saveRefreshToken(validToken);
 
-        // Then
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
     @Test
-    @DisplayName("Should throw RefreshTokenStorageException on duplicate token")
     void saveRefreshToken_DuplicateToken_ThrowsException() {
-        // Given
         when(refreshTokenRepository.save(any(RefreshToken.class)))
                 .thenThrow(new DataIntegrityViolationException("Duplicate key"));
 
-        // When & Then
         assertThatThrownBy(() -> refreshTokenService.saveRefreshToken(validToken))
                 .isInstanceOf(RefreshTokenStorageException.class)
                 .hasMessageContaining("Failed to store refresh token");
@@ -124,9 +115,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when token is null")
     void saveRefreshToken_NullToken_ThrowsException() {
-        // When & Then
         assertThatThrownBy(() -> refreshTokenService.saveRefreshToken(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Token cannot be null");
@@ -135,9 +124,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    @DisplayName("Should refresh tokens successfully with valid token")
     void refreshTokens_ValidToken_ReturnsNewTokens() {
-        // Given
         RefreshRequestDTO request = new RefreshRequestDTO("validRefreshToken");
         Token newAccessToken = new Token(
                 UUID.randomUUID(),
@@ -163,29 +150,24 @@ class RefreshTokenServiceTest {
         when(tokenSerializer.serialize(newRefreshToken)).thenReturn("newRefreshToken");
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(storedRefreshToken);
 
-        // When
         RefreshResponseDTO result = refreshTokenService.refreshTokens(request);
 
-        // Then
         assertThat(result).isNotNull();
         assertThat(result.accessToken()).isEqualTo("newAccessToken");
         assertThat(result.refreshToken()).isEqualTo("newRefreshToken");
 
         verify(tokenDeserializer).deserialize("validRefreshToken");
-        verify(refreshTokenRepository).findById(tokenId);
+        verify(refreshTokenRepository, times(2)).findById(tokenId); // Called twice: findByTokenId() and markAsUsed()
         verify(accountRepository).findByEmail("test@example.com");
         verify(tokenFactory).createAccessToken(any(Authentication.class));
         verify(tokenFactory).createRefreshToken(any(Authentication.class));
     }
 
     @Test
-    @DisplayName("Should throw InvalidJwtToken for malformed token")
     void refreshTokens_InvalidToken_ThrowsException() {
-        // Given
         RefreshRequestDTO request = new RefreshRequestDTO("invalidToken");
         when(tokenDeserializer.deserialize("invalidToken")).thenThrow(new RuntimeException("Malformed JWT"));
 
-        // When & Then
         assertThatThrownBy(() -> refreshTokenService.refreshTokens(request))
                 .isInstanceOf(InvalidJwtToken.class)
                 .hasMessageContaining("Invalid refresh token format");
@@ -195,9 +177,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw RefreshTokenExpiredException for expired token")
     void refreshTokens_ExpiredToken_ThrowsException() {
-        // Given
         RefreshRequestDTO request = new RefreshRequestDTO("expiredToken");
         RefreshToken expiredToken = RefreshToken.builder()
                 .tokenId(tokenId)
@@ -211,7 +191,6 @@ class RefreshTokenServiceTest {
         when(tokenDeserializer.deserialize("expiredToken")).thenReturn(validToken);
         when(refreshTokenRepository.findById(tokenId)).thenReturn(Optional.of(expiredToken));
 
-        // When & Then
         assertThatThrownBy(() -> refreshTokenService.refreshTokens(request))
                 .isInstanceOf(RefreshTokenExpiredException.class)
                 .hasMessageContaining("Refresh token has expired");
@@ -222,16 +201,13 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw RefreshTokenInvalidException for already used token")
     void refreshTokens_UsedToken_ThrowsException() {
-        // Given
         RefreshRequestDTO request = new RefreshRequestDTO("usedToken");
         storedRefreshToken.setUsed(true);
 
         when(tokenDeserializer.deserialize("usedToken")).thenReturn(validToken);
         when(refreshTokenRepository.findById(tokenId)).thenReturn(Optional.of(storedRefreshToken));
 
-        // When & Then
         assertThatThrownBy(() -> refreshTokenService.refreshTokens(request))
                 .isInstanceOf(RefreshTokenInvalidException.class)
                 .hasMessageContaining("already used");
@@ -241,16 +217,13 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw RefreshTokenInvalidException for revoked token")
     void refreshTokens_RevokedToken_ThrowsException() {
-        // Given
         RefreshRequestDTO request = new RefreshRequestDTO("revokedToken");
         storedRefreshToken.setRevoked(true);
 
         when(tokenDeserializer.deserialize("revokedToken")).thenReturn(validToken);
         when(refreshTokenRepository.findById(tokenId)).thenReturn(Optional.of(storedRefreshToken));
 
-        // When & Then
         assertThatThrownBy(() -> refreshTokenService.refreshTokens(request))
                 .isInstanceOf(RefreshTokenInvalidException.class)
                 .hasMessageContaining("revoked");
@@ -260,81 +233,63 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw AccountNotFoundException when user not found")
     void refreshTokens_UserNotFound_ThrowsException() {
-        // Given
         RefreshRequestDTO request = new RefreshRequestDTO("validToken");
 
         when(tokenDeserializer.deserialize("validToken")).thenReturn(validToken);
         when(refreshTokenRepository.findById(tokenId)).thenReturn(Optional.of(storedRefreshToken));
         when(accountRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
 
-        // When & Then
         assertThatThrownBy(() -> refreshTokenService.refreshTokens(request))
                 .isInstanceOf(AccountNotFoundException.class)
                 .hasMessageContaining("User not found");
 
         verify(tokenDeserializer).deserialize("validToken");
-        verify(refreshTokenRepository).findById(tokenId);
+        verify(refreshTokenRepository, times(2)).findById(tokenId); // Called twice: findByTokenId() and markAsUsed()
         verify(accountRepository).findByEmail("test@example.com");
     }
 
     @Test
-    @DisplayName("Should mark token as used")
     void markAsUsed_Success() {
-        // Given
         when(refreshTokenRepository.findById(tokenId)).thenReturn(Optional.of(storedRefreshToken));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(storedRefreshToken);
 
-        // When
         refreshTokenService.markAsUsed(tokenId);
 
-        // Then
         verify(refreshTokenRepository).findById(tokenId);
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
     @Test
-    @DisplayName("Should revoke refresh token")
     void revokeRefreshToken_Success() {
-        // Given
         when(refreshTokenRepository.findById(tokenId)).thenReturn(Optional.of(storedRefreshToken));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(storedRefreshToken);
 
-        // When
         refreshTokenService.revokeRefreshToken(tokenId);
 
-        // Then
         verify(refreshTokenRepository).findById(tokenId);
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
     @Test
-    @DisplayName("Should revoke refresh token by string")
     void revokeRefreshTokenByString_Success() {
-        // Given
         String tokenString = "validRefreshToken";
         when(tokenDeserializer.deserialize(tokenString)).thenReturn(validToken);
         when(refreshTokenRepository.findById(tokenId)).thenReturn(Optional.of(storedRefreshToken));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(storedRefreshToken);
 
-        // When
         refreshTokenService.revokeRefreshTokenByString(tokenString);
 
-        // Then
         verify(tokenDeserializer).deserialize(tokenString);
         verify(refreshTokenRepository).findById(tokenId);
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
     @Test
-    @DisplayName("Should throw InvalidJwtToken when revoking with invalid token string")
     void revokeRefreshTokenByString_InvalidToken_ThrowsException() {
-        // Given
         String invalidToken = "invalidToken";
         when(tokenDeserializer.deserialize(invalidToken)).thenThrow(new RuntimeException("Invalid"));
 
-        // When & Then
         assertThatThrownBy(() -> refreshTokenService.revokeRefreshTokenByString(invalidToken))
                 .isInstanceOf(InvalidJwtToken.class)
                 .hasMessageContaining("Invalid refresh token format");

@@ -14,7 +14,6 @@ import com.softserve.bookstoreapi.security.TokenSerializer;
 import com.softserve.bookstoreapi.service.impl.AccountService;
 import com.softserve.bookstoreapi.service.impl.RefreshTokenService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,7 +40,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AccountService Unit Tests")
 class AccountServiceTest {
 
     @Mock
@@ -110,17 +108,13 @@ class AccountServiceTest {
     }
 
     @Test
-    @DisplayName("Should register user successfully")
     void registerUser_Success() {
-        // Given
         when(accountRepository.existsByEmail(validRegisterRequest.email())).thenReturn(false);
         when(passwordEncoder.encode(validRegisterRequest.password())).thenReturn("encodedPassword");
         when(accountRepository.save(any(Account.class))).thenReturn(testAccount);
 
-        // When
         UserRegisterResponseDTO result = accountService.registerUser(validRegisterRequest);
 
-        // Then
         assertThat(result).isNotNull();
         assertThat(result.email()).isEqualTo(validRegisterRequest.email());
         assertThat(result.username()).isEqualTo(validRegisterRequest.username());
@@ -133,12 +127,9 @@ class AccountServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw EmailAlreadyExistsException when email already exists")
     void registerUser_EmailAlreadyExists_ThrowsException() {
-        // Given
         when(accountRepository.existsByEmail(validRegisterRequest.email())).thenReturn(true);
 
-        // When & Then
         assertThatThrownBy(() -> accountService.registerUser(validRegisterRequest))
                 .isInstanceOf(EmailAlreadyExistsException.class)
                 .hasMessageContaining("error.email.already.exists");
@@ -149,9 +140,7 @@ class AccountServiceTest {
     }
 
     @Test
-    @DisplayName("Should login successfully and return tokens")
     void login_Success_ReturnsTokens() {
-        // Given
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 "test@example.com",
                 "password123",
@@ -166,10 +155,8 @@ class AccountServiceTest {
         when(tokenSerializer.serialize(testRefreshToken)).thenReturn("refreshTokenString");
         doNothing().when(refreshTokenService).saveRefreshToken(testRefreshToken);
 
-        // When
         LoginResponseDTO result = accountService.login(validLoginRequest);
 
-        // Then
         assertThat(result).isNotNull();
         assertThat(result.email()).isEqualTo("test@example.com");
         assertThat(result.accessToken()).isEqualTo("accessTokenString");
@@ -184,13 +171,10 @@ class AccountServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw BadCredentialsException for invalid credentials")
     void login_InvalidCredentials_ThrowsException() {
-        // Given
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Invalid credentials"));
 
-        // When & Then
         assertThatThrownBy(() -> accountService.login(validLoginRequest))
                 .isInstanceOf(BadCredentialsException.class)
                 .hasMessageContaining("Invalid credentials");
@@ -201,13 +185,10 @@ class AccountServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw DisabledException for disabled account")
     void login_DisabledAccount_ThrowsException() {
-        // Given
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new DisabledException("Account is disabled"));
 
-        // When & Then
         assertThatThrownBy(() -> accountService.login(validLoginRequest))
                 .isInstanceOf(DisabledException.class)
                 .hasMessageContaining("Account is disabled");
@@ -217,15 +198,11 @@ class AccountServiceTest {
     }
 
     @Test
-    @DisplayName("Should find account by email")
     void findByEmail_Success() {
-        // Given
         when(accountRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testAccount));
 
-        // When
         Optional<Account> result = accountService.findByEmail("test@example.com");
 
-        // Then
         assertThat(result).isPresent();
         assertThat(result.get().getEmail()).isEqualTo("test@example.com");
 
@@ -233,15 +210,11 @@ class AccountServiceTest {
     }
 
     @Test
-    @DisplayName("Should return empty when account not found by email")
     void findByEmail_NotFound() {
-        // Given
         when(accountRepository.findByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
 
-        // When
         Optional<Account> result = accountService.findByEmail("nonexistent@example.com");
 
-        // Then
         assertThat(result).isEmpty();
 
         verify(accountRepository).findByEmail("nonexistent@example.com");
