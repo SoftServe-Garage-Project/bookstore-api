@@ -27,9 +27,9 @@ public class BalanceService {
     }
     @Transactional
     public TransactionDTO topUpBalance(TopUpDTO request, Principal principal) {
-        String email = principal.getName();
+        String name = principal.getName();
 
-        Account account = accountRepository.findByEmail(email)
+        Account account = accountRepository.findByEmail(name)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
 
         account.setBalance(account.getBalance().add(request.amount()));
