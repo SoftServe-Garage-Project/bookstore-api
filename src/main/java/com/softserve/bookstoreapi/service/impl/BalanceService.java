@@ -9,10 +9,11 @@ import com.softserve.bookstoreapi.model.enums.TransactionStatus;
 import com.softserve.bookstoreapi.model.enums.TransactionType;
 import com.softserve.bookstoreapi.repository.AccountRepository;
 import com.softserve.bookstoreapi.repository.TransactionRepository;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
-
+@Service
 public class BalanceService {
 
     private final AccountRepository accountRepository;
