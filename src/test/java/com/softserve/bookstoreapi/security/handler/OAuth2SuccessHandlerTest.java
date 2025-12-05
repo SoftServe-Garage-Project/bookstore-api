@@ -74,7 +74,6 @@ class OAuth2SuccessHandlerTest {
 
     @Test
     void shouldHandleSuccessfulOAuth2LoginForExistingUser() throws Exception {
-        // Given
         String email = "test@example.com";
         String name = "Test User";
         String provider = "google";
@@ -92,7 +91,6 @@ class OAuth2SuccessHandlerTest {
 
         String expectedJson = "{\"email\":\"test@example.com\",\"roles\":[\"ROLE_CUSTOMER\"],\"accessToken\":\"access-token-string\",\"refreshToken\":\"refresh-token-string\"}";
 
-        // When
         when(accountService.findByEmail(email)).thenReturn(Optional.of(existingAccount));
         when(tokenFactory.createAccessToken(any(Authentication.class))).thenReturn(accessToken);
         when(tokenFactory.createRefreshToken(any(Authentication.class))).thenReturn(refreshToken);
@@ -102,7 +100,6 @@ class OAuth2SuccessHandlerTest {
 
         oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authentication);
 
-        // Then
         verify(accountService).findByEmail(email);
         verify(accountService, never()).save(any(Account.class));
         verify(tokenFactory).createAccessToken(any(Authentication.class));
@@ -121,7 +118,6 @@ class OAuth2SuccessHandlerTest {
 
     @Test
     void shouldHandleSuccessfulOAuth2LoginForNewUser() throws Exception {
-        // Given
         String email = "newuser@example.com";
         String name = "New User";
         String provider = "google";
@@ -129,7 +125,6 @@ class OAuth2SuccessHandlerTest {
         OAuth2User oAuth2User = createOAuth2User(email, name);
         OAuth2AuthenticationToken authentication = createOAuth2Authentication(oAuth2User, provider);
 
-        Account newAccount = createAccount(null, name, email, UserRole.ROLE_CUSTOMER);
         Account savedAccount = createAccount(2L, name, email, UserRole.ROLE_CUSTOMER);
 
         Token accessToken = createToken(UUID.randomUUID(), email, List.of("ROLE_CUSTOMER"));
@@ -140,7 +135,6 @@ class OAuth2SuccessHandlerTest {
 
         String expectedJson = "{\"email\":\"newuser@example.com\",\"roles\":[\"ROLE_CUSTOMER\"],\"accessToken\":\"access-token-string\",\"refreshToken\":\"refresh-token-string\"}";
 
-        // When
         when(accountService.findByEmail(email)).thenReturn(Optional.empty());
         when(accountService.save(any(Account.class))).thenReturn(savedAccount);
         when(tokenFactory.createAccessToken(any(Authentication.class))).thenReturn(accessToken);
@@ -151,7 +145,6 @@ class OAuth2SuccessHandlerTest {
 
         oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authentication);
 
-        // Then
         ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
         verify(accountService).findByEmail(email);
         verify(accountService).save(accountCaptor.capture());
@@ -176,7 +169,6 @@ class OAuth2SuccessHandlerTest {
 
     @Test
     void shouldHandleOAuth2LoginWithNullName() throws Exception {
-        // Given
         String email = "noname@example.com";
         String provider = "google";
 
@@ -197,7 +189,6 @@ class OAuth2SuccessHandlerTest {
         Token accessToken = createToken(UUID.randomUUID(), email, List.of("ROLE_CUSTOMER"));
         Token refreshToken = createToken(UUID.randomUUID(), email, List.of("REFRESH_TOKEN"));
 
-        // When
         when(accountService.findByEmail(email)).thenReturn(Optional.empty());
         when(accountService.save(any(Account.class))).thenReturn(savedAccount);
         when(tokenFactory.createAccessToken(any(Authentication.class))).thenReturn(accessToken);
@@ -207,17 +198,15 @@ class OAuth2SuccessHandlerTest {
 
         oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authentication);
 
-        // Then
         ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
         verify(accountService).save(accountCaptor.capture());
 
         Account capturedAccount = accountCaptor.getValue();
-        assertThat(capturedAccount.getUsername()).isEqualTo("noname"); // email prefix
+        assertThat(capturedAccount.getUsername()).isEqualTo("noname");
     }
 
     @Test
     void shouldIncludeAllRolesInResponse() throws Exception {
-        // Given
         String email = "admin@example.com";
         String name = "Admin User";
         String provider = "google";
@@ -230,7 +219,6 @@ class OAuth2SuccessHandlerTest {
         Token accessToken = createToken(UUID.randomUUID(), email, List.of("ROLE_ADMIN", "ROLE_MANAGER", "ROLE_CUSTOMER"));
         Token refreshToken = createToken(UUID.randomUUID(), email, List.of("REFRESH_TOKEN"));
 
-        // When
         when(accountService.findByEmail(email)).thenReturn(Optional.of(adminAccount));
         when(tokenFactory.createAccessToken(any(Authentication.class))).thenReturn(accessToken);
         when(tokenFactory.createRefreshToken(any(Authentication.class))).thenReturn(refreshToken);
@@ -241,7 +229,6 @@ class OAuth2SuccessHandlerTest {
 
         oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authentication);
 
-        // Then
         LoginResponseDTO capturedResponse = responseCaptor.getValue();
         assertThat(capturedResponse.email()).isEqualTo(email);
         assertThat(capturedResponse.roles()).contains("ROLE_ADMIN");
@@ -249,7 +236,6 @@ class OAuth2SuccessHandlerTest {
         assertThat(capturedResponse.refreshToken()).isEqualTo("token-string");
     }
 
-    // Helper methods
     private OAuth2User createOAuth2User(String email, String name) {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("email", email);
