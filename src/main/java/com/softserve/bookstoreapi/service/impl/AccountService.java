@@ -103,4 +103,9 @@ public class AccountService {
                 savedAccount.getBalance()
         );
     }
+
+    @Transactional
+    public Account save(Account account) {
+        return accountRepository.save(account);
+    }
 }
