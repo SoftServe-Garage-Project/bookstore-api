@@ -4,12 +4,13 @@ import com.softserve.bookstoreapi.DTO.AuthorDTO;
 import com.softserve.bookstoreapi.DTO.BookDTO;
 
 import com.softserve.bookstoreapi.model.Book;
+import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
-
+@Component
 public class BookMapper {
 
-    public static BookDTO toDto(Book book) {
+    public BookDTO toDto(Book book) {
         return new BookDTO(
                 book.getTitle(),
                 book.getDescription(),

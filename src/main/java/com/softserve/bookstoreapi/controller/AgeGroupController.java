@@ -20,7 +20,7 @@ public class AgeGroupController {
     }
 
     @PostMapping("/api/ageGroups")
-    public ResponseEntity<?> create(@Valid @RequestBody AgeGroupDTO dto) {
+    public ResponseEntity<AgeGroupDTO> create(@Valid @RequestBody AgeGroupDTO dto) {
         AgeGroup saved = ageGroupService.save(ageGroupMapper.toEntity(dto));
         return ResponseEntity.ok(ageGroupMapper.toDto(saved));
     }

@@ -14,13 +14,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class LanguageController {
     private final LanguageService languageService;
-    public LanguageController(LanguageService languageService) {
+    private final LanguageMapper languageMapper;
+
+    public LanguageController(LanguageService languageService, LanguageMapper languageMapper) {
         this.languageService = languageService;
+        this.languageMapper = languageMapper;
     }
 
     @PostMapping("/api/languages")
     public ResponseEntity<LanguageDTO> saveLanguage(@Valid @RequestBody LanguageDTO languageDTO) {
         Language newLanguage = languageService.saveLanguage(languageDTO);
-        return ResponseEntity.ok(LanguageMapper.toDto(newLanguage));
+        return ResponseEntity.ok(languageMapper.toDto(newLanguage));
     }
 }

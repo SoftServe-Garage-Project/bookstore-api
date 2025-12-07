@@ -22,6 +22,7 @@ public class BookService {
     private final AgeGroupRepository ageGroupRepository;
     private final LanguageRepository languageRepository;
     private final AuthorRepository authorRepository;
+    private final BookMapper bookMapper;
 
     @Transactional
     public Book createBook(BookDTO request) {
@@ -94,6 +95,6 @@ public class BookService {
         else {
             books = bookRepository.findAll(pageable);
         }
-        return books.map(BookMapper::toDto);
+        return books.map(bookMapper::toDto);
     }
 }

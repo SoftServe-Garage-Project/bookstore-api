@@ -22,7 +22,7 @@ public class LanguageService {
     public Language saveLanguage(LanguageDTO languageDTO) {
         Language newLanguage = new Language();
         newLanguage.setCode(languageDTO.code());
-        newLanguage.setName(languageDTO.code());
+        newLanguage.setName(languageDTO.name());
         return languageRepository.save(newLanguage);
     }
 }

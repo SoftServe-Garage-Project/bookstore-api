@@ -16,13 +16,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class GenreController {
     private final GenreService genreService;
-    public GenreController(GenreService genreService) {
+    private final GenreMapper genreMapper;
+    public GenreController(GenreService genreService, GenreMapper genreMapper) {
         this.genreService = genreService;
+        this.genreMapper = genreMapper;
     }
 
     @PostMapping("/api/genres")
     public ResponseEntity<GenreDTO> createGenre(@Valid @RequestBody GenreDTO genreDTO) {
         Genre createdGenre = genreService.addGenre(genreDTO);
-        return ResponseEntity.ok(GenreMapper.toDto(createdGenre));
+        return ResponseEntity.ok(genreMapper.toDto(createdGenre));
     }
 }

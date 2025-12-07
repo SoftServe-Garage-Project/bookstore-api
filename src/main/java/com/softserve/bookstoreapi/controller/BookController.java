@@ -15,14 +15,16 @@ import org.springframework.data.domain.Pageable;
 @RestController
 public class BookController {
     private final BookService bookService;
-    public BookController(BookService bookService) {
-        this.bookService = bookService;
-    }
+    private final BookMapper bookMapper;
+    public BookController(BookService bookService, BookMapper bookMapper) {
 
+        this.bookService = bookService;
+        this.bookMapper = bookMapper;
+    }
     @PostMapping("/api/book")
     public ResponseEntity<BookDTO> createBook(@Valid @RequestBody BookDTO request) {
         Book created = bookService.createBook(request);
-        BookDTO response = BookMapper.toDto(created);
+        BookDTO response = bookMapper.toDto(created);
         return ResponseEntity.ok(response);
     }
     @GetMapping("/api/book")
