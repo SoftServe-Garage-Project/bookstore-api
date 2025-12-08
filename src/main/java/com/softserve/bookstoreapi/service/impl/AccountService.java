@@ -103,4 +103,27 @@ public class AccountService {
                 savedAccount.getBalance()
         );
     }
+
+    @Transactional
+    public Account save(Account account) {
+        return accountRepository.save(account);
+    }
+
+    @Transactional
+    public Account findOrCreateOAuth2Account(String email, String name) {
+        return accountRepository.findByEmail(email)
+                .orElseGet(() -> {
+                    Account newAccount = new Account();
+                    String username = name != null ? name : (email != null ? email.split("@")[0] : "user");
+                    newAccount.setUsername(username);
+                    newAccount.setEmail(email);
+                    newAccount.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+                    newAccount.setRole(UserRole.ROLE_CUSTOMER);
+                    newAccount.setBalance(BigDecimal.ZERO);
+
+                    Account savedAccount = accountRepository.save(newAccount);
+                    log.info("Created new OAuth2 account for email: {}", obfuscate(email));
+                    return savedAccount;
+                });
+    }
 }

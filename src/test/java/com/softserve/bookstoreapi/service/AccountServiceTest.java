@@ -219,5 +219,73 @@ class AccountServiceTest {
 
         verify(accountRepository).findByEmail("nonexistent@example.com");
     }
+    @Test
+    void findOrCreateOAuth2Account_ExistingUser() {
+        String email = "existing@example.com";
+        String name = "Existing User";
+        Account existingAccount = new Account();
+        existingAccount.setId(1L);
+        existingAccount.setEmail(email);
+        existingAccount.setUsername(name);
+
+        when(accountRepository.findByEmail(email)).thenReturn(Optional.of(existingAccount));
+
+        Account result = accountService.findOrCreateOAuth2Account(email, name);
+
+        assertThat(result).isEqualTo(existingAccount);
+        assertThat(result.getEmail()).isEqualTo(email);
+
+        verify(accountRepository).findByEmail(email);
+        verify(accountRepository, never()).save(any(Account.class));
+    }
+
+    @Test
+    void findOrCreateOAuth2Account_NewUser() {
+        String email = "new@example.com";
+        String name = "New User";
+        Account savedAccount = new Account();
+        savedAccount.setId(2L);
+        savedAccount.setEmail(email);
+        savedAccount.setUsername(name);
+        savedAccount.setRole(UserRole.ROLE_CUSTOMER);
+        savedAccount.setBalance(BigDecimal.ZERO);
+
+        when(accountRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedRandomPassword");
+        when(accountRepository.save(any(Account.class))).thenReturn(savedAccount);
+
+        Account result = accountService.findOrCreateOAuth2Account(email, name);
+
+        assertThat(result).isEqualTo(savedAccount);
+        assertThat(result.getEmail()).isEqualTo(email);
+        assertThat(result.getUsername()).isEqualTo(name);
+
+        verify(accountRepository).findByEmail(email);
+        verify(accountRepository).save(any(Account.class));
+        verify(passwordEncoder).encode(anyString());
+    }
+
+    @Test
+    void findOrCreateOAuth2Account_NewUserWithNullName() {
+        String email = "noname@example.com";
+        Account savedAccount = new Account();
+        savedAccount.setId(3L);
+        savedAccount.setEmail(email);
+        savedAccount.setUsername("noname");
+        savedAccount.setRole(UserRole.ROLE_CUSTOMER);
+        savedAccount.setBalance(BigDecimal.ZERO);
+
+        when(accountRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedRandomPassword");
+        when(accountRepository.save(any(Account.class))).thenReturn(savedAccount);
+
+        Account result = accountService.findOrCreateOAuth2Account(email, null);
+
+        assertThat(result).isEqualTo(savedAccount);
+        assertThat(result.getEmail()).isEqualTo(email);
+
+        verify(accountRepository).findByEmail(email);
+        verify(accountRepository).save(any(Account.class));
+    }
 }
 

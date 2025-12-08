@@ -23,7 +23,9 @@ public class PublicUrlConfig {
                 "/api/register",
                 "/api/refresh",
                 "/api/logout",
-                "/error"
+                "/error",
+                "/oauth2/**",
+                "/login/oauth2/**"
         };
 
         @Override
