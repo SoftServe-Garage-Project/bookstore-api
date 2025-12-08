@@ -17,8 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Entity
 @Table(
-        name = "promo_code",
-        uniqueConstraints = @UniqueConstraint(name = "uq_promo_code", columnNames = "code"),
+        name = "promo_codes",
         indexes = {@Index(name = "idx_promo_codes_code_active", columnList = "code, is_active")}
 )
 public class PromoCode extends SoftDeletableEntity {
@@ -30,7 +29,7 @@ public class PromoCode extends SoftDeletableEntity {
 
     @NotNull(message = "{validation.promocode.discount.notnull}")
     @DecimalMin(value = "0.01", inclusive = false, message = "{validation.promocode.discount.min}")
-    @DecimalMax(value = "99.99", inclusive = false, message = "{validation.promocode.discount.max}")
+    @DecimalMax(value = "99.99", inclusive = true, message = "{validation.promocode.discount.max}")
     @Column(nullable = false, precision = 5, scale = 2, name = "discount_percentage")
     private BigDecimal discountPercentage;
 
@@ -45,7 +44,7 @@ public class PromoCode extends SoftDeletableEntity {
     @Column(name = "valid_to")
     private LocalDateTime validTo;
 
-    @Min(value = 0, message = "{validation.promocode.maxuses.min}")
+    @Min(value = 1, message = "{validation.promocode.maxuses.min}")
     @Column(name = "max_uses")
     private Integer maxUses;
 

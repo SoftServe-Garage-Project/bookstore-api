@@ -1,6 +1,6 @@
 package com.softserve.bookstoreapi.model;
 
-import com.softserve.bookstoreapi.model.generaEntities.SoftDeletableEntity;
+import com.softserve.bookstoreapi.model.generaEntities.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -14,8 +14,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "language")
-public class Language extends SoftDeletableEntity {
+@Table(name = "languages")
+public class Language extends BaseEntity {
 
     @NotBlank(message = "{validation.language.code.notblank}")
     @Size(min = 2, max = 10, message = "{validation.language.code.size}")

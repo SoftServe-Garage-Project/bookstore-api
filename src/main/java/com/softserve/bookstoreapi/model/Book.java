@@ -17,7 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "book", indexes = {
+@Table(name = "books", indexes = {
         @Index(name = "idx_books_title_active", columnList = "title, is_active"),
         @Index(name = "idx_books_genre_active", columnList = "genre_id, is_active")})
 public class Book extends SoftDeletableEntity {

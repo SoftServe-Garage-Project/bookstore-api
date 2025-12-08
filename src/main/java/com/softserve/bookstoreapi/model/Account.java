@@ -1,5 +1,6 @@
 package com.softserve.bookstoreapi.model;
 
+import com.softserve.bookstoreapi.model.enums.Permissions;
 import com.softserve.bookstoreapi.model.enums.UserRole;
 import com.softserve.bookstoreapi.model.generaEntities.SoftDeletableEntity;
 import jakarta.persistence.*;
@@ -8,14 +9,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -27,7 +25,7 @@ import java.util.Set;
         uniqueConstraints = {@UniqueConstraint(name = "uq_accounts_email", columnNames = "email")},
         indexes = {@Index(name = "idx_accounts_email_active", columnList = "email, is_active")}
 )
-public class User extends SoftDeletableEntity {
+public class Account extends SoftDeletableEntity {
 
     @NotBlank(message = "{validation.user.username.notblank}")
     @Size(min = 3, max = 100, message = "{validation.user.username.size}")
@@ -53,15 +51,27 @@ public class User extends SoftDeletableEntity {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
 
-    @ElementCollection(fetch = FetchType.LAZY, targetClass = String.class)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "account_permissions", joinColumns = @JoinColumn(name = "account_id"))
+    @Enumerated(EnumType.STRING)
     @Column(name = "permission", length = 50)
-    private List<String> permissions = new ArrayList<>();
+    private List<Permissions> permissions = new ArrayList<>();
 
-    public Set<GrantedAuthority> getAuthorities() {
-        Set<GrantedAuthority> authorities = new HashSet<>();
-        authorities.add(new SimpleGrantedAuthority(role.name()));
-        permissions.forEach(perm -> authorities.add(new SimpleGrantedAuthority(perm)));
+
+    public List<SimpleGrantedAuthority> getAuthorities() {
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+
+        String roleName = this.role.name();
+        String roleAuthority = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+        authorities.add(new SimpleGrantedAuthority(roleAuthority));
+
+        this.permissions.forEach(permission -> {
+            String permName = permission.name();
+            String permAuthority = permName.startsWith("ROLE_") ? permName : "ROLE_" + permName;
+            authorities.add(new SimpleGrantedAuthority(permAuthority));
+        });
+
         return authorities;
     }
 }
+
