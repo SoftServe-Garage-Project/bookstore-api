@@ -1,6 +1,7 @@
 package service;
 
 import com.softserve.bookstoreapi.DTO.GenreDTO;
+import com.softserve.bookstoreapi.mapper.GenreMapper;
 import com.softserve.bookstoreapi.model.Genre;
 import com.softserve.bookstoreapi.repository.GenreRepository;
 import com.softserve.bookstoreapi.service.GenreService;
@@ -26,35 +27,44 @@ class GenreServiceTest {
     @Mock
     private GenreRepository genreRepository;
 
+    @Mock
+    private GenreMapper genreMapper;
+
     @InjectMocks
     private GenreService genreService;
 
     @Test
-    @DisplayName("addGenre: Should successfully save and return the genre")
-    void addGenre_Success_ReturnsSavedEntity() {
-        GenreDTO dto = new GenreDTO("Fantasy", "Magic books");
-
+    @DisplayName("addGenre: Should successfully save and return the DTO")
+    void addGenre_Success_ReturnsDto() {
+        GenreDTO inputDto = new GenreDTO("Fantasy", "Magic books");
+        GenreDTO expectedDto = new GenreDTO("Fantasy", "Magic books"); // То, что вернет маппер
         Genre savedGenre = new Genre();
         savedGenre.setId(1L);
         savedGenre.setName("Fantasy");
         savedGenre.setDescription("Magic books");
 
-        when(genreRepository.save(any(Genre.class))).thenReturn(savedGenre);
 
-        Genre result = genreService.addGenre(dto);
+        when(genreRepository.save(any(Genre.class))).thenReturn(savedGenre);
+        when(genreMapper.toDto(savedGenre)).thenReturn(expectedDto);
+
+        GenreDTO result = genreService.addGenre(inputDto);
 
         assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(1L);
-        assertThat(result.getName()).isEqualTo("Fantasy");
+        assertThat(result.name()).isEqualTo("Fantasy");
+        assertThat(result.description()).isEqualTo("Magic books");
 
         verify(genreRepository, times(1)).save(any(Genre.class));
+        verify(genreMapper, times(1)).toDto(any(Genre.class));
     }
 
     @Test
     @DisplayName("addGenre: Should correctly map DTO fields to Entity")
     void addGenre_Success_MappingCorrect() {
         GenreDTO dto = new GenreDTO("Horror", "Scary books");
-        when(genreRepository.save(any(Genre.class))).thenReturn(new Genre());
+        Genre savedGenre = new Genre(); // Пустая сущность для возврата репозиторием
+
+        when(genreRepository.save(any(Genre.class))).thenReturn(savedGenre);
+        when(genreMapper.toDto(any())).thenReturn(dto);
 
         genreService.addGenre(dto);
 
@@ -74,7 +84,6 @@ class GenreServiceTest {
         assertThat(capturedGenre.getId()).isNull();
     }
 
-
     @Test
     @DisplayName("addGenre: Should propagate exception when Repository fails")
     void addGenre_RepositoryThrowsException() {
@@ -88,7 +97,9 @@ class GenreServiceTest {
                 .hasMessage("Duplicate name");
 
         verify(genreRepository).save(any(Genre.class));
+        verifyNoInteractions(genreMapper);
     }
+
     @Test
     @DisplayName("addGenre: Should throw NullPointerException when input is null")
     void addGenre_NullInput_ThrowsNPE() {
@@ -97,5 +108,6 @@ class GenreServiceTest {
         });
 
         verify(genreRepository, never()).save(any());
+        verifyNoInteractions(genreMapper);
     }
 }

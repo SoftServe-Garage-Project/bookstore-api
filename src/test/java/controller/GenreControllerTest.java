@@ -56,8 +56,7 @@ class GenreControllerTest {
     @Test
     @DisplayName("Should create Genre successfully")
     void createGenre_Success() throws Exception {
-        when(genreService.addGenre(any(GenreDTO.class))).thenReturn(savedEntity);
-        when(genreMapper.toDto(any(Genre.class))).thenReturn(validDto);
+        when(genreService.addGenre(any(GenreDTO.class))).thenReturn(validDto);
 
         mockMvc.perform(post("/api/genres")
                         .contentType(MediaType.APPLICATION_JSON)

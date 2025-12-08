@@ -24,7 +24,7 @@ public class GenreController {
 
     @PostMapping("/api/genres")
     public ResponseEntity<GenreDTO> createGenre(@Valid @RequestBody GenreDTO genreDTO) {
-        Genre createdGenre = genreService.addGenre(genreDTO);
-        return ResponseEntity.ok(genreMapper.toDto(createdGenre));
+        GenreDTO createdGenre = genreService.addGenre(genreDTO);
+        return ResponseEntity.ok(createdGenre);
     }
 }
