@@ -3,7 +3,6 @@ package com.softserve.bookstoreapi.security.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.softserve.bookstoreapi.dto.LoginResponseDTO;
 import com.softserve.bookstoreapi.model.Account;
-import com.softserve.bookstoreapi.model.enums.UserRole;
 import com.softserve.bookstoreapi.security.Token;
 import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
@@ -23,9 +22,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 import static com.softserve.bookstoreapi.logger.LoggerUtils.obfuscate;
 
@@ -47,18 +44,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String email = oauthUser.getAttribute("email");
         String name = oauthUser.getAttribute("name");
 
-        Account account = accountService.findByEmail(email)
-                .orElseGet(() -> {
-                    Account newAccount = new Account();
-                    String username = name != null ? name : (email != null ? email.split("@")[0] : "user");
-                    newAccount.setUsername(username);
-                    newAccount.setEmail(email);
-                    newAccount.setPassword(UUID.randomUUID().toString());
-                    newAccount.setRole(UserRole.ROLE_CUSTOMER);
-                    newAccount.setBalance(BigDecimal.ZERO);
-                    log.info("Creating new OAuth2 account for email: {}", obfuscate(email));
-                    return accountService.save(newAccount);
-                });
+        Account account = accountService.findOrCreateOAuth2Account(email, name);
 
         log.info("OAuth2 login success for email: {}, provider: {}",
                 obfuscate(email),
