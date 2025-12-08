@@ -91,7 +91,7 @@ class OAuth2SuccessHandlerTest {
 
         String expectedJson = "{\"email\":\"test@example.com\",\"roles\":[\"ROLE_CUSTOMER\"],\"accessToken\":\"access-token-string\",\"refreshToken\":\"refresh-token-string\"}";
 
-        when(accountService.findByEmail(email)).thenReturn(Optional.of(existingAccount));
+        when(accountService.findOrCreateOAuth2Account(email, name)).thenReturn(existingAccount);
         when(tokenFactory.createAccessToken(any(Authentication.class))).thenReturn(accessToken);
         when(tokenFactory.createRefreshToken(any(Authentication.class))).thenReturn(refreshToken);
         when(tokenSerializer.serialize(accessToken)).thenReturn(accessTokenString);
@@ -100,8 +100,7 @@ class OAuth2SuccessHandlerTest {
 
         oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authentication);
 
-        verify(accountService).findByEmail(email);
-        verify(accountService, never()).save(any(Account.class));
+        verify(accountService).findOrCreateOAuth2Account(email, name);
         verify(tokenFactory).createAccessToken(any(Authentication.class));
         verify(tokenFactory).createRefreshToken(any(Authentication.class));
         verify(tokenSerializer).serialize(accessToken);
@@ -135,8 +134,7 @@ class OAuth2SuccessHandlerTest {
 
         String expectedJson = "{\"email\":\"newuser@example.com\",\"roles\":[\"ROLE_CUSTOMER\"],\"accessToken\":\"access-token-string\",\"refreshToken\":\"refresh-token-string\"}";
 
-        when(accountService.findByEmail(email)).thenReturn(Optional.empty());
-        when(accountService.save(any(Account.class))).thenReturn(savedAccount);
+        when(accountService.findOrCreateOAuth2Account(email, name)).thenReturn(savedAccount);
         when(tokenFactory.createAccessToken(any(Authentication.class))).thenReturn(accessToken);
         when(tokenFactory.createRefreshToken(any(Authentication.class))).thenReturn(refreshToken);
         when(tokenSerializer.serialize(accessToken)).thenReturn(accessTokenString);
@@ -145,17 +143,7 @@ class OAuth2SuccessHandlerTest {
 
         oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authentication);
 
-        ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
-        verify(accountService).findByEmail(email);
-        verify(accountService).save(accountCaptor.capture());
-
-        Account capturedAccount = accountCaptor.getValue();
-        assertThat(capturedAccount.getEmail()).isEqualTo(email);
-        assertThat(capturedAccount.getUsername()).isEqualTo(name);
-        assertThat(capturedAccount.getRole()).isEqualTo(UserRole.ROLE_CUSTOMER);
-        assertThat(capturedAccount.getBalance()).isEqualTo(BigDecimal.ZERO);
-        assertThat(capturedAccount.getPassword()).isNotNull().hasSize(36); // UUID format
-
+        verify(accountService).findOrCreateOAuth2Account(email, name);
         verify(tokenFactory).createAccessToken(any(Authentication.class));
         verify(tokenFactory).createRefreshToken(any(Authentication.class));
         verify(refreshTokenService).saveRefreshToken(refreshToken);
@@ -189,8 +177,7 @@ class OAuth2SuccessHandlerTest {
         Token accessToken = createToken(UUID.randomUUID(), email, List.of("ROLE_CUSTOMER"));
         Token refreshToken = createToken(UUID.randomUUID(), email, List.of("REFRESH_TOKEN"));
 
-        when(accountService.findByEmail(email)).thenReturn(Optional.empty());
-        when(accountService.save(any(Account.class))).thenReturn(savedAccount);
+        when(accountService.findOrCreateOAuth2Account(email, null)).thenReturn(savedAccount);
         when(tokenFactory.createAccessToken(any(Authentication.class))).thenReturn(accessToken);
         when(tokenFactory.createRefreshToken(any(Authentication.class))).thenReturn(refreshToken);
         when(tokenSerializer.serialize(any(Token.class))).thenReturn("token-string");
@@ -198,11 +185,7 @@ class OAuth2SuccessHandlerTest {
 
         oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authentication);
 
-        ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
-        verify(accountService).save(accountCaptor.capture());
-
-        Account capturedAccount = accountCaptor.getValue();
-        assertThat(capturedAccount.getUsername()).isEqualTo("noname");
+        verify(accountService).findOrCreateOAuth2Account(email, null);
     }
 
     @Test
@@ -219,7 +202,7 @@ class OAuth2SuccessHandlerTest {
         Token accessToken = createToken(UUID.randomUUID(), email, List.of("ROLE_ADMIN", "ROLE_MANAGER", "ROLE_CUSTOMER"));
         Token refreshToken = createToken(UUID.randomUUID(), email, List.of("REFRESH_TOKEN"));
 
-        when(accountService.findByEmail(email)).thenReturn(Optional.of(adminAccount));
+        when(accountService.findOrCreateOAuth2Account(email, name)).thenReturn(adminAccount);
         when(tokenFactory.createAccessToken(any(Authentication.class))).thenReturn(accessToken);
         when(tokenFactory.createRefreshToken(any(Authentication.class))).thenReturn(refreshToken);
         when(tokenSerializer.serialize(any(Token.class))).thenReturn("token-string");
