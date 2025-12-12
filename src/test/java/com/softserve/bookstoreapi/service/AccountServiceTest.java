@@ -4,6 +4,7 @@ import com.softserve.bookstoreapi.dto.LoginRequestDTO;
 import com.softserve.bookstoreapi.dto.LoginResponseDTO;
 import com.softserve.bookstoreapi.dto.UserRegisterRequestDTO;
 import com.softserve.bookstoreapi.dto.UserRegisterResponseDTO;
+import com.softserve.bookstoreapi.exception.AccountNotFoundException;
 import com.softserve.bookstoreapi.exception.EmailAlreadyExistsException;
 import com.softserve.bookstoreapi.model.Account;
 import com.softserve.bookstoreapi.model.enums.UserRole;
@@ -287,5 +288,34 @@ class AccountServiceTest {
         verify(accountRepository).findByEmail(email);
         verify(accountRepository).save(any(Account.class));
     }
-}
 
+    @Test
+    void changePassword_Success() {
+        String email = "test@example.com";
+        String newPassword = "newPassword123";
+        Account account = new Account();
+        account.setEmail(email);
+        account.setPassword("oldPassword");
+
+        when(accountRepository.findByEmail(email)).thenReturn(Optional.of(account));
+        when(passwordEncoder.encode(newPassword)).thenReturn("encodedNewPassword");
+
+        accountService.changePassword(email, newPassword);
+
+        assertThat(account.getPassword()).isEqualTo("encodedNewPassword");
+        verify(accountRepository).save(account);
+    }
+
+    @Test
+    void changePassword_AccountNotFound() {
+        String email = "nonexistent@example.com";
+        String newPassword = "newPassword123";
+
+        when(accountRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> accountService.changePassword(email, newPassword))
+                .isInstanceOf(AccountNotFoundException.class);
+
+        verify(accountRepository, never()).save(any());
+    }
+}

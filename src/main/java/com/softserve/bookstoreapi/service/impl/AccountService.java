@@ -117,10 +117,10 @@ public class AccountService {
     public void changePassword(String email, String newPassword) {
         Account account = accountRepository.findByEmail(email)
                 .orElseThrow(() -> new com.softserve.bookstoreapi.exception.AccountNotFoundException("Account not found for email: " + email));
-
+        
         account.setPassword(passwordEncoder.encode(newPassword));
         accountRepository.save(account);
-
+        
         log.info("Password changed for user: {}", obfuscate(email));
     }
 
