@@ -11,7 +11,7 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 @RequiredArgsConstructor
 public class BearerTokenAuthenticationConverter implements AuthenticationConverter {
 
-    private final TokenCookieJweStringDeserializer tokenDeserializer;
+    private final TokenDeserializer tokenDeserializer;
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String AUTHORIZATION_HEADER = "Authorization";
 

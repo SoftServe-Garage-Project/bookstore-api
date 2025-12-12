@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
 class BearerTokenAuthenticationConverterTest {
 
     @Mock
-    private TokenCookieJweStringDeserializer tokenDeserializer;
+    private TokenDeserializer tokenDeserializer;
 
     @Mock
     private HttpServletRequest request;

@@ -4,7 +4,7 @@ import com.softserve.bookstoreapi.exception.InvalidJwtToken;
 import com.softserve.bookstoreapi.model.DeactivatedToken;
 import com.softserve.bookstoreapi.repository.DeactivatedTokenRepository;
 import com.softserve.bookstoreapi.security.Token;
-import com.softserve.bookstoreapi.security.TokenCookieJweStringDeserializer;
+import com.softserve.bookstoreapi.security.TokenDeserializer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,7 @@ import static com.softserve.bookstoreapi.logger.LoggerUtils.obfuscate;
 public class TokenDeactivationService {
 
     private final DeactivatedTokenRepository deactivatedTokenRepository;
-    private final TokenCookieJweStringDeserializer tokenDeserializer;
+    private final TokenDeserializer tokenDeserializer;
 
     @Transactional
     public void deactivateAccessToken(String accessTokenString) {

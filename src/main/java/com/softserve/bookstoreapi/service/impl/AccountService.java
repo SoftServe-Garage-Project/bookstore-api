@@ -42,6 +42,10 @@ public class AccountService {
         return accountRepository.findByEmail(email);
     }
 
+    public boolean existsByEmail(String email) {
+        return accountRepository.existsByEmail(email);
+    }
+
     public LoginResponseDTO login(LoginRequestDTO loginRequest) {
         log.debug("Login attempt for user: {}", obfuscate(loginRequest.email()));
 
@@ -107,6 +111,17 @@ public class AccountService {
     @Transactional
     public Account save(Account account) {
         return accountRepository.save(account);
+    }
+
+    @Transactional
+    public void changePassword(String email, String newPassword) {
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new com.softserve.bookstoreapi.exception.AccountNotFoundException("Account not found for email: " + email));
+
+        account.setPassword(passwordEncoder.encode(newPassword));
+        accountRepository.save(account);
+
+        log.info("Password changed for user: {}", obfuscate(email));
     }
 
     @Transactional

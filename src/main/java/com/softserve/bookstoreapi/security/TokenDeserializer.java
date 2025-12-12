@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @Slf4j
 @RequiredArgsConstructor
-public class TokenCookieJweStringDeserializer {
+public class TokenDeserializer {
 
     private final JWEDecrypter jweDecrypter;
 

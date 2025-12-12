@@ -13,7 +13,7 @@ import com.softserve.bookstoreapi.model.enums.UserRole;
 import com.softserve.bookstoreapi.repository.AccountRepository;
 import com.softserve.bookstoreapi.repository.RefreshTokenRepository;
 import com.softserve.bookstoreapi.security.Token;
-import com.softserve.bookstoreapi.security.TokenCookieJweStringDeserializer;
+import com.softserve.bookstoreapi.security.TokenDeserializer;
 import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
 import com.softserve.bookstoreapi.service.impl.RefreshTokenService;
@@ -47,7 +47,7 @@ class RefreshTokenServiceTest {
     private AccountRepository accountRepository;
 
     @Mock
-    private TokenCookieJweStringDeserializer tokenDeserializer;
+    private TokenDeserializer tokenDeserializer;
 
     @Mock
     private TokenFactory tokenFactory;

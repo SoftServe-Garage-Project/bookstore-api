@@ -4,7 +4,7 @@ import com.softserve.bookstoreapi.exception.InvalidJwtToken;
 import com.softserve.bookstoreapi.model.DeactivatedToken;
 import com.softserve.bookstoreapi.repository.DeactivatedTokenRepository;
 import com.softserve.bookstoreapi.security.Token;
-import com.softserve.bookstoreapi.security.TokenCookieJweStringDeserializer;
+import com.softserve.bookstoreapi.security.TokenDeserializer;
 import com.softserve.bookstoreapi.service.impl.TokenDeactivationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ class TokenDeactivationServiceTest {
     private DeactivatedTokenRepository deactivatedTokenRepository;
 
     @Mock
-    private TokenCookieJweStringDeserializer tokenDeserializer;
+    private TokenDeserializer tokenDeserializer;
 
     @InjectMocks
     private TokenDeactivationService tokenDeactivationService;
