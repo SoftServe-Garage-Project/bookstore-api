@@ -9,7 +9,7 @@ import com.nimbusds.jose.crypto.DirectEncrypter;
 import com.nimbusds.jose.jwk.OctetSequenceKey;
 import com.softserve.bookstoreapi.repository.DeactivatedTokenRepository;
 import com.softserve.bookstoreapi.security.BearerTokenAuthenticationConfigurer;
-import com.softserve.bookstoreapi.security.TokenCookieJweStringDeserializer;
+import com.softserve.bookstoreapi.security.TokenDeserializer;
 import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
 import com.softserve.bookstoreapi.security.handler.OAuth2FailureHandler;
@@ -94,7 +94,10 @@ public class SecurityConfig {
 
     @Bean
     public ObjectMapper objectMapper() {
-        return new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        mapper.disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return mapper;
     }
 
     @Bean
@@ -121,7 +124,7 @@ public class SecurityConfig {
 
     @Bean
     public BearerTokenAuthenticationConfigurer bearerTokenAuthenticationConfigurer(
-            TokenCookieJweStringDeserializer deserializer,
+            TokenDeserializer deserializer,
             DeactivatedTokenRepository deactivatedTokenRepository,
             PublicUrlConfig publicUrlConfig) {
 
@@ -132,9 +135,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public TokenCookieJweStringDeserializer tokenCookieJweStringDeserializer(
+    public TokenDeserializer tokenCookieJweStringDeserializer(
             @Value("${jwt.cookie-token-key}") String cookieTokenKey) throws Exception {
-        return new TokenCookieJweStringDeserializer(
+        return new TokenDeserializer(
                 new DirectDecrypter(OctetSequenceKey.parse(cookieTokenKey))
         );
     }

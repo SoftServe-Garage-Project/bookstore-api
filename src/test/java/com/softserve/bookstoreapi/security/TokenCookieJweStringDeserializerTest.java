@@ -16,7 +16,7 @@ class TokenCookieJweStringDeserializerTest {
     @Mock
     private JWEDecrypter jweDecrypter;
 
-    private TokenCookieJweStringDeserializer deserializer;
+    private TokenDeserializer deserializer;
 
     private static final String MALFORMED_TOKEN = "this.is.not.a.valid.jwt";
     private static final String EMPTY_TOKEN = "";
@@ -24,7 +24,7 @@ class TokenCookieJweStringDeserializerTest {
 
     @BeforeEach
     void setUp() {
-        deserializer = new TokenCookieJweStringDeserializer(jweDecrypter);
+        deserializer = new TokenDeserializer(jweDecrypter);
     }
 
     @Test

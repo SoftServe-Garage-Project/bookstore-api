@@ -58,4 +58,20 @@ public class TokenFactory {
                 now.plus(refreshTokenDuration)
         );
     }
+
+    public Token createPasswordRecoveryToken(String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email cannot be null or blank");
+        }
+
+        var now = Instant.now();
+
+        return new Token(
+                UUID.randomUUID(),
+                email,
+                List.of("PASSWORD_RECOVERY"),
+                now,
+                now.plus(Duration.ofMinutes(15))
+        );
+    }
 }

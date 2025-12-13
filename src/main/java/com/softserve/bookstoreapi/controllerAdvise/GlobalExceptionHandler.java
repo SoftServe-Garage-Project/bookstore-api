@@ -5,6 +5,7 @@ import com.softserve.bookstoreapi.exception.AccountNotFoundException;
 import com.softserve.bookstoreapi.exception.EmailAlreadyExistsException;
 import com.softserve.bookstoreapi.exception.InsufficientPermissionsException;
 import com.softserve.bookstoreapi.exception.InvalidJwtToken;
+import com.softserve.bookstoreapi.exception.PasswordRecoveryTokenExpiredException;
 import com.softserve.bookstoreapi.exception.RefreshTokenExpiredException;
 import com.softserve.bookstoreapi.exception.RefreshTokenInvalidException;
 import com.softserve.bookstoreapi.exception.RefreshTokenStorageException;
@@ -100,6 +101,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleRefreshTokenExpired(RefreshTokenExpiredException ex) {
         log.info("Refresh token expired. Token ID: {}", ex.getTokenId());
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Refresh Token Expired", "error.token.refresh.expired");
+    }
+
+    @ExceptionHandler(PasswordRecoveryTokenExpiredException.class)
+    public ResponseEntity<ErrorResponse> handlePasswordRecoveryTokenExpired(PasswordRecoveryTokenExpiredException ex) {
+        log.info("Password recovery token expired: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Password Recovery Token Expired", "error.token.password.recovery.expired");
     }
 
     @ExceptionHandler(RefreshTokenInvalidException.class)

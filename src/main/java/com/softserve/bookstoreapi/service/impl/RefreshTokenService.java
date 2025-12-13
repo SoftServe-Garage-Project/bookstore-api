@@ -12,7 +12,7 @@ import com.softserve.bookstoreapi.model.RefreshToken;
 import com.softserve.bookstoreapi.repository.AccountRepository;
 import com.softserve.bookstoreapi.repository.RefreshTokenRepository;
 import com.softserve.bookstoreapi.security.Token;
-import com.softserve.bookstoreapi.security.TokenCookieJweStringDeserializer;
+import com.softserve.bookstoreapi.security.TokenDeserializer;
 import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +36,7 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final AccountRepository accountRepository;
-    private final TokenCookieJweStringDeserializer tokenDeserializer;
+    private final TokenDeserializer tokenDeserializer;
     private final TokenFactory tokenFactory;
     private final TokenSerializer tokenSerializer;
 
