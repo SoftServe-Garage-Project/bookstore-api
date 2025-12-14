@@ -1,7 +1,7 @@
 package com.softserve.bookstoreapi.mapper;
 
-import com.softserve.bookstoreapi.DTO.AuthorDTO;
-import com.softserve.bookstoreapi.DTO.BookDTO;
+import com.softserve.bookstoreapi.dto.AuthorDTO;
+import com.softserve.bookstoreapi.dto.BookDTO;
 
 import com.softserve.bookstoreapi.model.Book;
 import org.springframework.stereotype.Component;

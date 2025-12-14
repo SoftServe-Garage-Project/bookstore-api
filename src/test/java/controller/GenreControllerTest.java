@@ -1,7 +1,7 @@
 package controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softserve.bookstoreapi.DTO.GenreDTO;
+import com.softserve.bookstoreapi.dto.GenreDTO;
 import com.softserve.bookstoreapi.controller.GenreController;
 import com.softserve.bookstoreapi.mapper.GenreMapper;
 import com.softserve.bookstoreapi.model.Genre;

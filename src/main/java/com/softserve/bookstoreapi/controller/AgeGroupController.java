@@ -1,6 +1,6 @@
 package com.softserve.bookstoreapi.controller;
 
-import com.softserve.bookstoreapi.DTO.AgeGroupDTO;
+import com.softserve.bookstoreapi.dto.AgeGroupDTO;
 import com.softserve.bookstoreapi.mapper.AgeGroupMapper;
 import com.softserve.bookstoreapi.model.AgeGroup;
 import com.softserve.bookstoreapi.service.AgeGroupService;

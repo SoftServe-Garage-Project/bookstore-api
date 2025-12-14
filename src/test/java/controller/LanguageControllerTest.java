@@ -1,7 +1,7 @@
 package controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softserve.bookstoreapi.DTO.LanguageDTO;
+import com.softserve.bookstoreapi.dto.LanguageDTO;
 import com.softserve.bookstoreapi.controller.LanguageController;
 import com.softserve.bookstoreapi.mapper.LanguageMapper;
 import com.softserve.bookstoreapi.model.Language;

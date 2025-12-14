@@ -1,6 +1,6 @@
 package com.softserve.bookstoreapi.service;
 
-import com.softserve.bookstoreapi.DTO.GenreDTO;
+import com.softserve.bookstoreapi.dto.GenreDTO;
 import com.softserve.bookstoreapi.mapper.GenreMapper;
 import com.softserve.bookstoreapi.model.Genre;
 import com.softserve.bookstoreapi.repository.GenreRepository;

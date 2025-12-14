@@ -1,6 +1,6 @@
 package com.softserve.bookstoreapi.mapper;
 
-import com.softserve.bookstoreapi.DTO.GenreDTO;
+import com.softserve.bookstoreapi.dto.GenreDTO;
 import com.softserve.bookstoreapi.model.Genre;
 import org.springframework.stereotype.Component;
 
