@@ -25,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -296,6 +297,87 @@ class RefreshTokenServiceTest {
 
         verify(tokenDeserializer).deserialize(invalidToken);
         verify(refreshTokenRepository, never()).findById(any());
+    }
+
+    @Test
+    void saveRefreshToken_ExactlyAtLimit_RevokesOneToken() {
+        // Set limit to 3 for this test
+        ReflectionTestUtils.setField(refreshTokenService, "maxRefreshTokensPerUser", 3);
+
+        when(refreshTokenRepository.countActiveTokensByUserEmail(anyString(), any(Instant.class))).thenReturn(3L);
+
+        RefreshToken tokenToRevoke = RefreshToken.builder()
+                .tokenId(UUID.randomUUID())
+                .userEmail("test@example.com")
+                .createdAt(Instant.now().minusSeconds(7200))
+                .expiresAt(Instant.now().plusSeconds(3600))
+                .used(false)
+                .revoked(false)
+                .build();
+
+        when(refreshTokenRepository.findActiveTokensByUserEmailOrderByCreatedAtAsc(anyString(), any(Instant.class)))
+                .thenReturn(List.of(tokenToRevoke));
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(storedRefreshToken);
+
+        refreshTokenService.saveRefreshToken(validToken);
+
+        // Verify oldest token was revoked
+        verify(refreshTokenRepository, times(2)).save(any(RefreshToken.class));
+    }
+
+    @Test
+    void saveRefreshToken_WithLowLimit_RevokesCorrectNumberOfTokens() {
+        // Set limit to 2 for this test
+        ReflectionTestUtils.setField(refreshTokenService, "maxRefreshTokensPerUser", 2);
+
+        // User has 4 tokens, limit is 2, so we need to revoke 3 (4 - 2 + 1)
+        when(refreshTokenRepository.countActiveTokensByUserEmail(anyString(), any(Instant.class))).thenReturn(4L);
+
+        List<RefreshToken> tokensToRevoke = List.of(
+                RefreshToken.builder()
+                        .tokenId(UUID.randomUUID())
+                        .userEmail("test@example.com")
+                        .createdAt(Instant.now().minusSeconds(7200))
+                        .expiresAt(Instant.now().plusSeconds(3600))
+                        .used(false)
+                        .revoked(false)
+                        .build(),
+                RefreshToken.builder()
+                        .tokenId(UUID.randomUUID())
+                        .userEmail("test@example.com")
+                        .createdAt(Instant.now().minusSeconds(5400))
+                        .expiresAt(Instant.now().plusSeconds(3600))
+                        .used(false)
+                        .revoked(false)
+                        .build(),
+                RefreshToken.builder()
+                        .tokenId(UUID.randomUUID())
+                        .userEmail("test@example.com")
+                        .createdAt(Instant.now().minusSeconds(3600))
+                        .expiresAt(Instant.now().plusSeconds(3600))
+                        .used(false)
+                        .revoked(false)
+                        .build()
+        );
+
+        when(refreshTokenRepository.findActiveTokensByUserEmailOrderByCreatedAtAsc(anyString(), any(Instant.class)))
+                .thenReturn(tokensToRevoke);
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(storedRefreshToken);
+
+        refreshTokenService.saveRefreshToken(validToken);
+
+        // Should revoke 3 tokens + save new one = 4 saves
+        verify(refreshTokenRepository, times(4)).save(any(RefreshToken.class));
+    }
+
+    @Test
+    void getActiveTokenCount_ZeroTokens_ReturnsZero() {
+        when(refreshTokenRepository.countActiveTokensByUserEmail(eq("newuser@example.com"), any(Instant.class)))
+                .thenReturn(0L);
+
+        long count = refreshTokenService.getActiveTokenCount("newuser@example.com");
+
+        assertThat(count).isZero();
     }
 }
 
