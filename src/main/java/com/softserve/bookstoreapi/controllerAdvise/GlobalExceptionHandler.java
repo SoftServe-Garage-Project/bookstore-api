@@ -11,6 +11,7 @@ import com.softserve.bookstoreapi.exception.RefreshTokenInvalidException;
 import com.softserve.bookstoreapi.exception.RefreshTokenStorageException;
 import com.softserve.bookstoreapi.exception.TokenDeactivatedException;
 import com.softserve.bookstoreapi.exception.TokenSerializationException;
+import com.softserve.bookstoreapi.exception.TooManyLoginAttemptsException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
@@ -126,6 +127,23 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
         log.warn("Authentication failed - invalid credentials");
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid Credentials", "error.auth.invalid.credentials");
+    }
+
+    @ExceptionHandler(TooManyLoginAttemptsException.class)
+    public ResponseEntity<ErrorResponse> handleTooManyLoginAttempts(TooManyLoginAttemptsException ex) {
+        log.warn("Too many login attempts for identifier: {}", ex.getIdentifier() != null ?
+                ex.getIdentifier().substring(0, Math.min(3, ex.getIdentifier().length())) + "***" : "unknown");
+
+        Map<String, String> details = new HashMap<>();
+        if (ex.getBlockedUntil() != null) {
+            details.put("blockedUntil", ex.getBlockedUntil().toString());
+        }
+        if (ex.getRemainingAttempts() > 0) {
+            details.put("remainingAttempts", String.valueOf(ex.getRemainingAttempts()));
+        }
+
+        return buildErrorResponse(HttpStatus.TOO_MANY_REQUESTS, "Too Many Login Attempts",
+                "error.auth.too.many.attempts", details);
     }
 
     @ExceptionHandler(LockedException.class)
