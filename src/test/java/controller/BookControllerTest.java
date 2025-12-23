@@ -1,8 +1,8 @@
 package controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softserve.bookstoreapi.DTO.AuthorDTO;
-import com.softserve.bookstoreapi.DTO.BookDTO;
+import com.softserve.bookstoreapi.dto.AuthorDTO;
+import com.softserve.bookstoreapi.dto.BookDTO;
 import com.softserve.bookstoreapi.controller.BookController;
 import com.softserve.bookstoreapi.mapper.BookMapper;
 import com.softserve.bookstoreapi.model.Book;

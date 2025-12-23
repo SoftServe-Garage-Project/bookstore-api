@@ -1,6 +1,6 @@
 package com.softserve.bookstoreapi.mapper;
 
-import com.softserve.bookstoreapi.DTO.LanguageDTO;
+import com.softserve.bookstoreapi.dto.LanguageDTO;
 import com.softserve.bookstoreapi.model.Language;
 import org.springframework.stereotype.Component;
 

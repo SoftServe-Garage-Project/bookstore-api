@@ -1,19 +1,20 @@
 package com.softserve.bookstoreapi.mapper;
 
-import com.softserve.bookstoreapi.DTO.GenreDTO;
+import com.softserve.bookstoreapi.dto.GenreDTO;
 import com.softserve.bookstoreapi.model.Genre;
 import org.springframework.stereotype.Component;
 
 @Component
 public class GenreMapper {
-    public GenreDTO toDto(Genre genre) {
+
+    public  GenreDTO toDto(Genre genre) {
         return new GenreDTO(genre.getName(), genre.getDescription());
     }
 
-    public Genre toEntity(GenreDTO dto) {
-        return new Genre (
-                dto.name(),
-                dto.description()
-        );
+    public  Genre toEntity(GenreDTO dto) {
+        Genre genre = new Genre();
+        genre.setName(dto.name());
+        genre.setDescription(dto.description());
+        return genre;
     }
 }
