@@ -10,7 +10,7 @@ public class TransactionMapper {
     public TransactionDTO toDto(Transaction tx) {
         return new TransactionDTO(
                 tx.getId(),
-                tx.getSender().getId(),
+                tx.getSender() != null ? tx.getSender().getId() : null,
                 tx.getReceiver() != null ? tx.getReceiver().getId() : null,
                 tx.getAmount(),
                 tx.getType(),
