@@ -1,5 +1,6 @@
 package com.softserve.bookstoreapi.security.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.KeyLengthException;
@@ -8,9 +9,13 @@ import com.nimbusds.jose.crypto.DirectEncrypter;
 import com.nimbusds.jose.jwk.OctetSequenceKey;
 import com.softserve.bookstoreapi.repository.DeactivatedTokenRepository;
 import com.softserve.bookstoreapi.security.BearerTokenAuthenticationConfigurer;
-import com.softserve.bookstoreapi.security.TokenCookieJweStringDeserializer;
+import com.softserve.bookstoreapi.security.TokenDeserializer;
 import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
+import com.softserve.bookstoreapi.security.handler.OAuth2FailureHandler;
+import com.softserve.bookstoreapi.security.handler.OAuth2SuccessHandler;
+import com.softserve.bookstoreapi.service.impl.AccountService;
+import com.softserve.bookstoreapi.service.impl.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,7 +47,9 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, PublicUrlConfig publicUrlConfig,
-                                                   BearerTokenAuthenticationConfigurer bearerTokenAuthenticationConfigurer) throws Exception {
+                                                   BearerTokenAuthenticationConfigurer bearerTokenAuthenticationConfigurer,
+                                                   OAuth2SuccessHandler oAuth2SuccessHandler,
+                                                   OAuth2FailureHandler oAuth2FailureHandler) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -50,6 +57,9 @@ public class SecurityConfig {
                         authorizeHttpRequests
                                 .requestMatchers(publicUrlConfig.getRequestMatcher()).permitAll()
                                 .anyRequest().authenticated())
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2SuccessHandler)
+                        .failureHandler(oAuth2FailureHandler))
                 .sessionManagement(sessionManagement -> sessionManagement
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
@@ -83,6 +93,14 @@ public class SecurityConfig {
     }
 
     @Bean
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        mapper.disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return mapper;
+    }
+
+    @Bean
     public TokenSerializer tokenSerializer(@Value("${jwt.cookie-token-key}") String cookieTokenKey) throws ParseException, KeyLengthException {
         return new TokenSerializer(new DirectEncrypter(
                 OctetSequenceKey.parse(cookieTokenKey)
@@ -106,7 +124,7 @@ public class SecurityConfig {
 
     @Bean
     public BearerTokenAuthenticationConfigurer bearerTokenAuthenticationConfigurer(
-            TokenCookieJweStringDeserializer deserializer,
+            TokenDeserializer deserializer,
             DeactivatedTokenRepository deactivatedTokenRepository,
             PublicUrlConfig publicUrlConfig) {
 
@@ -117,10 +135,25 @@ public class SecurityConfig {
     }
 
     @Bean
-    public TokenCookieJweStringDeserializer tokenCookieJweStringDeserializer(
+    public TokenDeserializer tokenCookieJweStringDeserializer(
             @Value("${jwt.cookie-token-key}") String cookieTokenKey) throws Exception {
-        return new TokenCookieJweStringDeserializer(
+        return new TokenDeserializer(
                 new DirectDecrypter(OctetSequenceKey.parse(cookieTokenKey))
         );
+    }
+
+    @Bean
+    public OAuth2SuccessHandler oAuth2SuccessHandler(
+            AccountService accountService,
+            TokenFactory tokenFactory,
+            TokenSerializer tokenSerializer,
+            RefreshTokenService refreshTokenService,
+            ObjectMapper objectMapper) {
+        return new OAuth2SuccessHandler(accountService, tokenFactory, tokenSerializer, refreshTokenService, objectMapper);
+    }
+
+    @Bean
+    public OAuth2FailureHandler oAuth2FailureHandler() {
+        return new OAuth2FailureHandler();
     }
 }

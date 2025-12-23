@@ -5,6 +5,7 @@ import com.softserve.bookstoreapi.exception.AccountNotFoundException;
 import com.softserve.bookstoreapi.exception.EmailAlreadyExistsException;
 import com.softserve.bookstoreapi.exception.InsufficientPermissionsException;
 import com.softserve.bookstoreapi.exception.InvalidJwtToken;
+import com.softserve.bookstoreapi.exception.PasswordRecoveryTokenExpiredException;
 import com.softserve.bookstoreapi.exception.RefreshTokenExpiredException;
 import com.softserve.bookstoreapi.exception.RefreshTokenInvalidException;
 import com.softserve.bookstoreapi.exception.RefreshTokenStorageException;
@@ -14,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
@@ -101,6 +103,12 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Refresh Token Expired", "error.token.refresh.expired");
     }
 
+    @ExceptionHandler(PasswordRecoveryTokenExpiredException.class)
+    public ResponseEntity<ErrorResponse> handlePasswordRecoveryTokenExpired(PasswordRecoveryTokenExpiredException ex) {
+        log.info("Password recovery token expired: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Password Recovery Token Expired", "error.token.password.recovery.expired");
+    }
+
     @ExceptionHandler(RefreshTokenInvalidException.class)
     public ResponseEntity<ErrorResponse> handleRefreshTokenInvalid(RefreshTokenInvalidException ex) {
         log.warn("Refresh token invalid. Token ID: {}, Reason: {}", ex.getTokenId(), ex.getReason());
@@ -136,6 +144,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex) {
         log.warn("Authentication failed: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Authentication Failed", "error.auth.failed");
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        log.warn("Malformed JSON request: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Malformed JSON Request", "error.malformed.json");
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

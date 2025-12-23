@@ -14,7 +14,7 @@ public class BearerTokenAuthenticationConfigurer
         extends AbstractHttpConfigurer<BearerTokenAuthenticationConfigurer, HttpSecurity> {
 
     private DeactivatedTokenRepository deactivatedTokenRepository;
-    private TokenCookieJweStringDeserializer tokenDeserializer;
+    private TokenDeserializer tokenDeserializer;
     private RequestMatcher requestMatcher;
 
     @Override
@@ -43,7 +43,7 @@ public class BearerTokenAuthenticationConfigurer
     }
 
     public BearerTokenAuthenticationConfigurer tokenDeserializer(
-            TokenCookieJweStringDeserializer tokenDeserializer) {
+            TokenDeserializer tokenDeserializer) {
         this.tokenDeserializer = tokenDeserializer;
         return this;
     }
