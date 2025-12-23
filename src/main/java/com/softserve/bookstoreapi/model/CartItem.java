@@ -15,15 +15,15 @@ import lombok.Setter;
 @Entity
 @Table(
         name = "cart_items",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"order_id", "book_id"})
+        uniqueConstraints = @UniqueConstraint(columnNames = {"cart_id", "book_id"})
 )
 public class CartItem extends BaseEntity {
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "order_id")
-    private Order order;
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "cart_id")
+    private Cart cart;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "book_id")
     private Book book;
 
