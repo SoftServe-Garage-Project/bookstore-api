@@ -1,6 +1,6 @@
 package com.softserve.bookstoreapi.controller;
 
-import com.softserve.bookstoreapi.DTO.BookDTO;
+import com.softserve.bookstoreapi.dto.BookDTO;
 import com.softserve.bookstoreapi.mapper.BookMapper;
 import com.softserve.bookstoreapi.model.Book;
 import com.softserve.bookstoreapi.service.BookService;

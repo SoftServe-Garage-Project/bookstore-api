@@ -1,6 +1,6 @@
 package com.softserve.bookstoreapi.mapper;
 
-import com.softserve.bookstoreapi.DTO.AgeGroupDTO;
+import com.softserve.bookstoreapi.dto.AgeGroupDTO;
 import com.softserve.bookstoreapi.model.AgeGroup;
 import org.springframework.stereotype.Component;
 
