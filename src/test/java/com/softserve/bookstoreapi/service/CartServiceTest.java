@@ -45,8 +45,9 @@ class CartServiceTest {
     private CartService cartService;
 
     private final String EMAIL = "user@test.com";
+
     @Test
-    @DisplayName("addItem: Should create new item, reduce stock and return DTO")
+    @DisplayName("addItem: Should create new item, BUT NOT change stock immediately")
     void addItem_Success_NewItem() {
         CartItemRequestDTO request = new CartItemRequestDTO(1L, 2);
 
@@ -61,7 +62,7 @@ class CartServiceTest {
         book.setId(1L);
         book.setTitle("Test Book");
         book.setPrice(new BigDecimal("10.00"));
-        book.setStockQuantity(10);
+        book.setStockQuantity(10); // На складе 10
 
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(account));
         when(cartRepository.findByUserEmail(EMAIL)).thenReturn(Optional.of(cart));
@@ -74,17 +75,18 @@ class CartServiceTest {
         });
 
         CartItemResponseDTO result = cartService.addItemToCart(EMAIL, request);
+
         assertThat(result.quantity()).isEqualTo(2);
         assertThat(result.bookTitle()).isEqualTo("Test Book");
 
-        assertThat(book.getStockQuantity()).isEqualTo(8);
-        verify(bookRepository).save(book);
+        assertThat(book.getStockQuantity()).isEqualTo(10);
+        verify(bookRepository, never()).save(any(Book.class));
 
         verify(cartItemRepository).save(any(CartItem.class));
     }
 
     @Test
-    @DisplayName("addItem: Should update existing item quantity and reduce stock")
+    @DisplayName("addItem: Should update existing item quantity, BUT NOT change stock")
     void addItem_Success_ExistingItem() {
         CartItemRequestDTO request = new CartItemRequestDTO(1L, 3);
 
@@ -109,13 +111,15 @@ class CartServiceTest {
         CartItemResponseDTO result = cartService.addItemToCart(EMAIL, request);
 
         assertThat(result.quantity()).isEqualTo(8);
-        assertThat(book.getStockQuantity()).isEqualTo(47);
+
+        assertThat(book.getStockQuantity()).isEqualTo(50);
+        verify(bookRepository, never()).save(any());
 
         assertThat(result.id()).isEqualTo(55L);
     }
 
     @Test
-    @DisplayName("addItem: Should throw exception if not enough stock")
+    @DisplayName("addItem: Should throw exception if not enough stock (Validation only)")
     void addItem_NotEnoughStock() {
         CartItemRequestDTO request = new CartItemRequestDTO(1L, 10);
 
@@ -126,6 +130,7 @@ class CartServiceTest {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(new Account()));
         when(cartRepository.findByUserEmail(EMAIL)).thenReturn(Optional.of(new Cart()));
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+
         assertThatThrownBy(() -> cartService.addItemToCart(EMAIL, request))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Not enough books");
@@ -148,9 +153,8 @@ class CartServiceTest {
     }
 
     @Test
-    @DisplayName("remove: Should delete item and restore stock")
+    @DisplayName("remove: Should delete item WITHOUT increasing stock")
     void removeCartItem_Success() {
-        // GIVEN
         Long itemId = 99L;
         Book book = new Book();
         book.setId(1L);
@@ -172,8 +176,9 @@ class CartServiceTest {
 
         cartService.removeCartItem(itemId, EMAIL);
 
-        assertThat(book.getStockQuantity()).isEqualTo(12);
-        verify(bookRepository).save(book);
+        assertThat(book.getStockQuantity()).isEqualTo(10);
+
+        verify(bookRepository, never()).save(any());
         verify(cartItemRepository).delete(item);
     }
 
