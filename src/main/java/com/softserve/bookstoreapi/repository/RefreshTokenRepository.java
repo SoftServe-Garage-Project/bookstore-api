@@ -34,6 +34,8 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
     @Modifying
     @Query("DELETE FROM RefreshToken rt WHERE rt.used = true AND rt.revoked = true AND rt.expiresAt < :now")
     int deleteUsedAndRevokedExpiredTokens(@Param("now") Instant now);
+
+    /**
      * Count active (not used, not revoked, not expired) refresh tokens for a user.
      */
     @Query("SELECT COUNT(rt) FROM RefreshToken rt WHERE rt.userEmail = :userEmail " +
