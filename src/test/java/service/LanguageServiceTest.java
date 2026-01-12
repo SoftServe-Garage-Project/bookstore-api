@@ -1,6 +1,6 @@
 package service;
 
-import com.softserve.bookstoreapi.DTO.LanguageDTO;
+import com.softserve.bookstoreapi.dto.LanguageDTO;
 import com.softserve.bookstoreapi.model.Language;
 import com.softserve.bookstoreapi.repository.LanguageRepository;
 import com.softserve.bookstoreapi.service.LanguageService;

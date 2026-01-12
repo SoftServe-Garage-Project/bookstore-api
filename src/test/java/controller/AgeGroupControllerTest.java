@@ -1,7 +1,7 @@
 package controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softserve.bookstoreapi.DTO.AgeGroupDTO;
+import com.softserve.bookstoreapi.dto.AgeGroupDTO;
 import com.softserve.bookstoreapi.controller.AgeGroupController;
 import com.softserve.bookstoreapi.mapper.AgeGroupMapper;
 import com.softserve.bookstoreapi.model.AgeGroup;
@@ -16,8 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import jakarta.validation.ConstraintViolationException;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;

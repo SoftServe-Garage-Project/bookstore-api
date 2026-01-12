@@ -1,17 +1,6 @@
 package com.softserve.bookstoreapi.controllerAdvise;
 
-import com.softserve.bookstoreapi.exception.AccessTokenExpiredException;
-import com.softserve.bookstoreapi.exception.AccountNotFoundException;
-import com.softserve.bookstoreapi.exception.EmailAlreadyExistsException;
-import com.softserve.bookstoreapi.exception.InsufficientPermissionsException;
-import com.softserve.bookstoreapi.exception.InvalidJwtToken;
-import com.softserve.bookstoreapi.exception.PasswordRecoveryTokenExpiredException;
-import com.softserve.bookstoreapi.exception.RefreshTokenExpiredException;
-import com.softserve.bookstoreapi.exception.RefreshTokenInvalidException;
-import com.softserve.bookstoreapi.exception.RefreshTokenStorageException;
-import com.softserve.bookstoreapi.exception.TokenDeactivatedException;
-import com.softserve.bookstoreapi.exception.TokenSerializationException;
-import com.softserve.bookstoreapi.exception.TooManyLoginAttemptsException;
+import com.softserve.bookstoreapi.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
@@ -78,6 +67,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleRefreshTokenStorageException(RefreshTokenStorageException ex) {
         log.error("Refresh token storage failed: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to Store Refresh Token", "error.refresh.token.storage.failed");
+    }
+
+    @ExceptionHandler(MaxTokensExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxTokensExceeded(MaxTokensExceededException ex) {
+        log.warn("Max tokens exceeded for user. Current: {}, Max: {}", ex.getCurrentCount(), ex.getMaxAllowed());
+        Map<String, String> details = new HashMap<>();
+        details.put("currentCount", String.valueOf(ex.getCurrentCount()));
+        details.put("maxAllowed", String.valueOf(ex.getMaxAllowed()));
+        return buildErrorResponse(HttpStatus.TOO_MANY_REQUESTS, "Too Many Active Sessions",
+                "error.token.max.exceeded", details);
     }
 
     @ExceptionHandler(InvalidJwtToken.class)

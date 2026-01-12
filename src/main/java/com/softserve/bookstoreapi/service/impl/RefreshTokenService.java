@@ -4,6 +4,7 @@ import com.softserve.bookstoreapi.dto.RefreshRequestDTO;
 import com.softserve.bookstoreapi.dto.RefreshResponseDTO;
 import com.softserve.bookstoreapi.exception.AccountNotFoundException;
 import com.softserve.bookstoreapi.exception.InvalidJwtToken;
+import com.softserve.bookstoreapi.exception.MaxTokensExceededException;
 import com.softserve.bookstoreapi.exception.RefreshTokenExpiredException;
 import com.softserve.bookstoreapi.exception.RefreshTokenInvalidException;
 import com.softserve.bookstoreapi.exception.RefreshTokenStorageException;
@@ -17,6 +18,7 @@ import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -24,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,15 +43,21 @@ public class RefreshTokenService {
     private final TokenFactory tokenFactory;
     private final TokenSerializer tokenSerializer;
 
+    @Value("${security.token.max-refresh-tokens-per-user:5}")
+    private int maxRefreshTokensPerUser;
+
     @Transactional
     public void saveRefreshToken(Token token) {
         if (token == null) {
             throw new IllegalArgumentException("Token cannot be null");
         }
 
+        String userEmail = token.subject();
+        enforceTokenLimit(userEmail);
+
         try {
             RefreshToken refreshToken = RefreshToken.builder()
-                    .userEmail(token.subject())
+                    .userEmail(userEmail)
                     .tokenId(token.tokenId())
                     .createdAt(token.createdAt())
                     .expiresAt(token.expiresAt())
@@ -57,16 +66,50 @@ public class RefreshTokenService {
                     .build();
 
             refreshTokenRepository.save(refreshToken);
-            log.trace("Successfully saved refresh token for user: {}", token.subject());
+            log.trace("Successfully saved refresh token for user: {}", obfuscate(userEmail));
         } catch (DataIntegrityViolationException e) {
             log.error("Failed to save refresh token (possible duplicate) for user: {}. Token ID: {}",
-                    token.subject(), token.tokenId());
+                    userEmail, token.tokenId());
             throw new RefreshTokenStorageException("Failed to store refresh token", e);
+        } catch (MaxTokensExceededException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Unexpected error while saving refresh token for user: {}. Token ID: {}",
-                    token.subject(), token.tokenId(), e);
+                    userEmail, token.tokenId(), e);
             throw new RefreshTokenStorageException("Failed to store refresh token due to unexpected error", e);
         }
+    }
+
+    /**
+     * Enforces the token limit per user by revoking oldest tokens if necessary.
+     */
+    private void enforceTokenLimit(String userEmail) {
+        Instant now = Instant.now();
+        long activeTokenCount = refreshTokenRepository.countActiveTokensByUserEmail(userEmail, now);
+
+        if (activeTokenCount >= maxRefreshTokensPerUser) {
+            log.warn("User {} has reached max refresh token limit ({}/{}). Revoking oldest tokens.",
+                    obfuscate(userEmail), activeTokenCount, maxRefreshTokensPerUser);
+
+            List<RefreshToken> activeTokens = refreshTokenRepository
+                    .findActiveTokensByUserEmailOrderByCreatedAtAsc(userEmail, now);
+
+            int tokensToRevoke = (int) (activeTokenCount - maxRefreshTokensPerUser + 1);
+            for (int i = 0; i < tokensToRevoke && i < activeTokens.size(); i++) {
+                RefreshToken oldestToken = activeTokens.get(i);
+                oldestToken.setRevoked(true);
+                refreshTokenRepository.save(oldestToken);
+                log.debug("Revoked oldest refresh token for user: {}. Token ID: {}",
+                        obfuscate(userEmail), oldestToken.getTokenId());
+            }
+        }
+    }
+
+    /**
+     * Get the count of active refresh tokens for a user.
+     */
+    public long getActiveTokenCount(String userEmail) {
+        return refreshTokenRepository.countActiveTokensByUserEmail(userEmail, Instant.now());
     }
 
     @Transactional(readOnly = true)
