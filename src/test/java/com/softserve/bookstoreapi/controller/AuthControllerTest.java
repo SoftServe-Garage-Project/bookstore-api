@@ -8,6 +8,7 @@ import com.softserve.bookstoreapi.dto.LogoutRequestDTO;
 import com.softserve.bookstoreapi.dto.RefreshRequestDTO;
 import com.softserve.bookstoreapi.dto.RefreshResponseDTO;
 import com.softserve.bookstoreapi.service.impl.AccountService;
+import com.softserve.bookstoreapi.service.impl.LoginAttemptService;
 import com.softserve.bookstoreapi.service.impl.LogoutService;
 import com.softserve.bookstoreapi.service.impl.RefreshTokenService;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -47,6 +49,9 @@ class AuthControllerTest {
     @MockitoBean
     private LogoutService logoutService;
 
+    @MockitoBean
+    private LoginAttemptService loginAttemptService;
+
     @Test
     void login_Success() throws Exception {
         LoginRequestDTO loginRequest = new LoginRequestDTO("test@example.com", "password123");
@@ -57,6 +62,7 @@ class AuthControllerTest {
                 "refresh-token-value"
         );
 
+        when(loginAttemptService.isBlocked(anyString())).thenReturn(false);
         when(accountService.login(any(LoginRequestDTO.class))).thenReturn(loginResponse);
 
         mockMvc.perform(post("/api/login")
@@ -68,12 +74,14 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.refreshToken").value("refresh-token-value"));
 
         verify(accountService, times(1)).login(any(LoginRequestDTO.class));
+        verify(loginAttemptService, times(1)).loginSucceeded(anyString());
     }
 
     @Test
     void login_InvalidCredentials() throws Exception {
         LoginRequestDTO loginRequest = new LoginRequestDTO("test@example.com", "wrongpassword");
 
+        when(loginAttemptService.isBlocked(anyString())).thenReturn(false);
         when(accountService.login(any(LoginRequestDTO.class)))
                 .thenThrow(new BadCredentialsException("Invalid credentials"));
 
@@ -83,6 +91,7 @@ class AuthControllerTest {
                 .andExpect(status().isUnauthorized());
 
         verify(accountService, times(1)).login(any(LoginRequestDTO.class));
+        verify(loginAttemptService, times(1)).loginFailed(anyString());
     }
 
     @Test
