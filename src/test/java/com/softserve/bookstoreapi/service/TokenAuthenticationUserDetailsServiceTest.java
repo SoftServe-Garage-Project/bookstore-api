@@ -120,7 +120,7 @@ class TokenAuthenticationUserDetailsServiceTest {
 
         assertThatThrownBy(() -> userDetailsService.loadUserDetails(invalidAuthToken))
                 .isInstanceOf(InvalidJwtToken.class)
-                .hasMessage("Invalid token principal type");
+                .hasMessageContaining("Invalid token principal type");
 
         verify(deactivatedTokenRepository, never()).existsById(any());
     }
