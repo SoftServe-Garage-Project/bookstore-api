@@ -109,7 +109,8 @@ public class SecurityConfig {
 
     @Bean
     public TokenFactory tokenFactory() {
-        return new TokenFactory(Duration.ofMinutes(30), Duration.ofHours(8));
+        //return new TokenFactory(Duration.ofMinutes(30), Duration.ofHours(8));
+        return new TokenFactory(Duration.ofSeconds(30), Duration.ofMinutes(1));
     }
 
     @Bean

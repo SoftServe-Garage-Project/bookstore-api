@@ -1,6 +1,8 @@
 package com.softserve.bookstoreapi.security;
 
-import jakarta.servlet.ServletException;
+import com.softserve.bookstoreapi.exception.AccessTokenExpiredException;
+import com.softserve.bookstoreapi.exception.InvalidJwtToken;
+import com.softserve.bookstoreapi.exception.TokenDeactivatedException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -25,18 +27,32 @@ public class TokenCookieAuthenticationFailureHandler implements AuthenticationFa
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
+        String errorCode = determineErrorCode(exception);
+
         String jsonResponse = """
                 {
                     "timestamp": "%s",
                     "status": 401,
                     "error": "Unauthorized",
-                    "errorCode": "error.token.authentication.failed",
+                    "errorCode": "%s",
                     "message": "Authentication failed"
                 }
-                """.formatted(java.time.LocalDateTime.now());
+                """.formatted(java.time.LocalDateTime.now(), errorCode);
 
         response.getWriter().write(jsonResponse);
         response.getWriter().flush();
+    }
+
+    private String determineErrorCode(AuthenticationException exception) {
+        if (exception instanceof AccessTokenExpiredException) {
+            return "error.token.expired";
+        } else if (exception instanceof TokenDeactivatedException) {
+            return "error.token.deactivated";
+        } else if (exception instanceof InvalidJwtToken) {
+            return "error.token.invalid";
+        } else {
+            return "error.token.authentication.failed";
+        }
     }
 }
 

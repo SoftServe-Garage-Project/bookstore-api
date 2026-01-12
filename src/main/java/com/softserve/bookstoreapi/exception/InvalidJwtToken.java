@@ -1,6 +1,8 @@
 package com.softserve.bookstoreapi.exception;
 
-public class InvalidJwtToken extends RuntimeException {
+import org.springframework.security.core.AuthenticationException;
+
+public class InvalidJwtToken extends AuthenticationException {
     public InvalidJwtToken(String message) {
         super(message);
     }

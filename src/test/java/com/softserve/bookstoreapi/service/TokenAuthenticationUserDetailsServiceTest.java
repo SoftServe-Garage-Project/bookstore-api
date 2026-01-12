@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 
@@ -78,8 +79,9 @@ class TokenAuthenticationUserDetailsServiceTest {
                 new PreAuthenticatedAuthenticationToken(expiredToken, null);
 
         assertThatThrownBy(() -> userDetailsService.loadUserDetails(expiredAuthToken))
-                .isInstanceOf(AccessTokenExpiredException.class)
-                .hasMessageContaining("Access token has expired");
+                .isInstanceOf(AccountStatusException.class)
+                .hasMessageContaining("Access token has expired")
+                .hasCauseInstanceOf(AccessTokenExpiredException.class);
 
         verify(deactivatedTokenRepository, never()).existsById(any());
     }
@@ -107,8 +109,9 @@ class TokenAuthenticationUserDetailsServiceTest {
         when(deactivatedTokenRepository.existsById(validToken.tokenId())).thenReturn(true);
 
         assertThatThrownBy(() -> userDetailsService.loadUserDetails(authenticationToken))
-                .isInstanceOf(TokenDeactivatedException.class)
-                .hasMessageContaining("Token has been deactivated");
+                .isInstanceOf(AccountStatusException.class)
+                .hasMessageContaining("Token has been deactivated")
+                .hasCauseInstanceOf(TokenDeactivatedException.class);
 
         verify(deactivatedTokenRepository, times(1)).existsById(validToken.tokenId());
     }
@@ -119,8 +122,9 @@ class TokenAuthenticationUserDetailsServiceTest {
                 new PreAuthenticatedAuthenticationToken("not-a-token", null);
 
         assertThatThrownBy(() -> userDetailsService.loadUserDetails(invalidAuthToken))
-                .isInstanceOf(InvalidJwtToken.class)
-                .hasMessage("Invalid token principal type");
+                .isInstanceOf(AccountStatusException.class)
+                .hasMessageContaining("Invalid token principal type")
+                .hasCauseInstanceOf(InvalidJwtToken.class);
 
         verify(deactivatedTokenRepository, never()).existsById(any());
     }
