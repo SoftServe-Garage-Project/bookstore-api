@@ -38,13 +38,9 @@ public class CartService {
 
         Book book = bookRepository.findById(request.bookId())
                 .orElseThrow(() -> new RuntimeException("Book not found"));
-
         if (book.getStockQuantity() < request.quantity()) {
-            throw new RuntimeException("Not enough books in stock " + book.getStockQuantity());
+            throw new RuntimeException("Not enough books in stock. Available: " + book.getStockQuantity());
         }
-        book.setStockQuantity(book.getStockQuantity() - request.quantity());
-        bookRepository.save(book);
-
         Optional<CartItem> existingItem = cart.getCartItems().stream()
                 .filter(item -> item.getBook().getId().equals(book.getId()))
                 .findFirst();
@@ -59,10 +55,10 @@ public class CartService {
             newItem.setCart(cart);
             newItem.setBook(book);
             newItem.setQuantity(request.quantity());
-
             cart.getCartItems().add(newItem);
             savedItem = cartItemRepository.save(newItem);
         }
+
         return new CartItemResponseDTO(
                 savedItem.getId(),
                 savedItem.getBook().getId(),
@@ -71,6 +67,7 @@ public class CartService {
                 savedItem.getBook().getPrice()
         );
     }
+
     @Transactional
     public void removeCartItem(Long cartItemId, String userEmail) {
         CartItem item = cartItemRepository.findById(cartItemId)
@@ -79,13 +76,9 @@ public class CartService {
         if (!item.getCart().getUser().getEmail().equals(userEmail)) {
             throw new RuntimeException("Access denied");
         }
-
-        Book book = item.getBook();
-        book.setStockQuantity(book.getStockQuantity() + item.getQuantity());
-        bookRepository.save(book);
-
         cartItemRepository.delete(item);
     }
+
 
     @Transactional
     public CartDTO getUserCart(String userEmail) {

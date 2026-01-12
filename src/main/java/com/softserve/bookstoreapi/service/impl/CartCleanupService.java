@@ -1,8 +1,6 @@
 package com.softserve.bookstoreapi.service.impl;
 
-import com.softserve.bookstoreapi.model.Book;
 import com.softserve.bookstoreapi.model.CartItem;
-import com.softserve.bookstoreapi.repository.BookRepository;
 import com.softserve.bookstoreapi.repository.CartItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,20 +15,15 @@ import java.util.List;
 public class CartCleanupService {
 
     private final CartItemRepository cartItemRepository;
-    private final BookRepository bookRepository;
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 3600000)
     @Transactional
     public void cleanupExpiredItems() {
-        LocalDateTime expirationTime = LocalDateTime.now().minusMinutes(30);
+        LocalDateTime expirationTime = LocalDateTime.now().minusMinutes(60);
 
         List<CartItem> expiredItems = cartItemRepository.findAllByUpdatedAtBefore(expirationTime);
+        cartItemRepository.deleteAll(expiredItems);
 
-        for (CartItem item : expiredItems) {
-            Book book = item.getBook();
-            book.setStockQuantity(book.getStockQuantity() + item.getQuantity());
-            bookRepository.save(book);
-            cartItemRepository.delete(item);
-        }
+        System.out.println("Cleaned up " + expiredItems.size() + " expired cart items.");
     }
 }
