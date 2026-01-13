@@ -12,6 +12,7 @@ public class BookMapper {
 
     public BookDTO toDto(Book book) {
         return new BookDTO(
+                book.getId(),
                 book.getTitle(),
                 book.getDescription(),
                 book.getGenre().getName(),

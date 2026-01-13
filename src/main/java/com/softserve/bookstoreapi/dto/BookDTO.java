@@ -5,6 +5,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record BookDTO(
+        Long id,
+
         @NotBlank @Size(min = 2, max = 255)
         String title,
 
