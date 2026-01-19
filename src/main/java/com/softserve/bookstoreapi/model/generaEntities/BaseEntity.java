@@ -3,6 +3,7 @@ package com.softserve.bookstoreapi.model.generaEntities;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -21,4 +22,8 @@ public abstract class BaseEntity implements Serializable {
     public void init() {
         this.createdAt = LocalDateTime.now();
     }
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

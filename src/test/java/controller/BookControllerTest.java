@@ -60,6 +60,7 @@ class BookControllerTest {
                 .build();
 
         validBookDto = new BookDTO(
+                1L,
                 "Harry Potter",
                 "A magical story",
                 "Fantasy",
@@ -96,7 +97,7 @@ class BookControllerTest {
     @DisplayName("createBook: Should return 400 when validation fails")
     void createBook_ValidationFail() throws Exception {
         BookDTO invalidDto = new BookDTO(
-                null, "Desc", "Genre", "Age", 2020, "EN", List.of(),
+                null,null, "Desc", "Genre", "Age", 2020, "EN", List.of(),
                 BigDecimal.TEN, 10, BigDecimal.ZERO, 100, "url"
         );
 

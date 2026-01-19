@@ -50,7 +50,7 @@ class BookServiceTest {
     @BeforeEach
     void setUp() {
         validRequest = new BookDTO(
-                "Harry Potter", "Magic", "Fantasy", "Teen", 1997, "EN",
+                null,"Harry Potter", "Magic", "Fantasy", "Teen", 1997, "EN",
                 List.of(new AuthorDTO("J.K.", "Rowling")),
                 BigDecimal.valueOf(20.0), 10, BigDecimal.ZERO, 300, "url"
         );
