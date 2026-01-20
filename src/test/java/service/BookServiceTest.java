@@ -97,10 +97,9 @@ class BookServiceTest {
     @DisplayName("createBook: Fail - Should throw Exception when Genre not found")
     void createBook_GenreNotFound() {
         when(genreRepository.findByNameIgnoreCase("Fantasy")).thenReturn(Optional.empty());
-
         assertThatThrownBy(() -> bookService.createBook(validRequest))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("Genre not found");
+                .hasMessageContaining("Genre not found");
 
         verify(bookRepository, never()).save(any());
     }
@@ -113,7 +112,7 @@ class BookServiceTest {
 
         assertThatThrownBy(() -> bookService.createBook(validRequest))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("Age group not found");
+                .hasMessageContaining("Age group not found");
     }
 
     @Test
@@ -125,10 +124,9 @@ class BookServiceTest {
 
         assertThatThrownBy(() -> bookService.createBook(validRequest))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("Language not found");
+                .hasMessageContaining("Language not found");
     }
 
-    //getBooks
     @Test
     @DisplayName("getBooks: Filter by Genre only (Success)")
     void getBooks_ByGenre_Success() {
@@ -228,5 +226,64 @@ class BookServiceTest {
         Page<BookDTO> result = bookService.getBooks("   ", "", pageable);
 
         verify(bookRepository).findAll(pageable);
+    }
+    @Test
+    @DisplayName("updateBook: Success - Should update fields and return updated book")
+    void updateBook_Success() {
+        Long bookId = 100L;
+        Book existingBook = new Book();
+        existingBook.setId(bookId);
+        existingBook.setTitle("Old Title");
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(existingBook));
+
+        when(genreRepository.findByNameIgnoreCase("Fantasy")).thenReturn(Optional.of(mockGenre));
+        when(ageGroupRepository.findByNameIgnoreCase("Teen")).thenReturn(Optional.of(mockAgeGroup));
+        when(languageRepository.findByCodeIgnoreCase("EN")).thenReturn(Optional.of(mockLanguage));
+        when(authorRepository.findByFirstNameIgnoreCaseAndLastNameIgnoreCase(anyString(), anyString())).thenReturn(Optional.empty());
+        when(authorRepository.save(any(Author.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        when(bookRepository.save(any(Book.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Book updatedBook = bookService.updateBook(bookId, validRequest);
+
+        assertThat(updatedBook.getTitle()).isEqualTo("Harry Potter");
+        verify(bookRepository).save(existingBook);
+    }
+
+    @Test
+    @DisplayName("updateBook: Fail - Book not found")
+    void updateBook_NotFound() {
+        when(bookRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> bookService.updateBook(999L, validRequest))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Book not found with id: 999");
+
+        verify(bookRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("deleteBook: Success - Should delete existing book")
+    void deleteBook_Success() {
+        Long bookId = 100L;
+        when(bookRepository.existsById(bookId)).thenReturn(true);
+
+        bookService.deleteBook(bookId);
+
+        verify(bookRepository).deleteById(bookId);
+    }
+
+    @Test
+    @DisplayName("deleteBook: Fail - Book not found")
+    void deleteBook_NotFound() {
+        Long bookId = 999L;
+        when(bookRepository.existsById(bookId)).thenReturn(false);
+
+        assertThatThrownBy(() -> bookService.deleteBook(bookId))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Book not found with id: 999");
+
+        verify(bookRepository, never()).deleteById(any());
     }
 }

@@ -26,43 +26,26 @@ public class BookService {
 
     @Transactional
     public Book createBook(BookDTO request) {
-        Genre genre = genreRepository.findByNameIgnoreCase(request.genre())
-                .orElseThrow(() -> new RuntimeException("Genre not found"));
-        AgeGroup ageGroup = ageGroupRepository.findByNameIgnoreCase(request.ageGroup())
-                .orElseThrow(() -> new RuntimeException("Age group not found"));
-        Language language = languageRepository.findByCodeIgnoreCase(request.languageCode())
-                .orElseThrow(() -> new RuntimeException("Language not found"));
-
         Book book = new Book();
-        book.setTitle(request.title());
-        book.setDescription(request.description());
-        book.setGenre(genre);
-        book.setAgeGroup(ageGroup);
-        book.setPublishedYear(request.publishedYear());
-        book.setLanguage(language);
-        book.setPrice(request.price());
-        book.setStockQuantity(request.stockQuantity());
-        book.setDiscountPercentage(request.discountPercentage());
-        book.setPageCount(request.pageCount());
-        book.setCoverImageUrl(request.coverImageUrl());
-
-        List<Author> authors = request.authors().stream()
-                .map(a -> {
-                    Author author = new Author();
-                    author.setFirstName(a.firstName());
-                    author.setLastName(a.lastName());
-                    author.setBiography(null);
-                    author.setCountry(null);
-                    author.setPhotoUrl(null);
-                    return authorRepository.save(author);
-                })
-                .collect(Collectors.toList());
-
-        book.setAuthors(authors);
-
-        return bookRepository.save(book);
+        return bookRepository.save(fillBookData(book, request));
     }
-    public List<Book> getAllBooks() {
+
+    @Transactional
+    public Book updateBook(Long id, BookDTO request) {
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Book not found with id: " + id));
+        Book updatedBook = fillBookData(book, request);
+        return bookRepository.save(updatedBook);
+    }
+
+    @Transactional
+    public void deleteBook(Long id) {
+        if (!bookRepository.existsById(id)) {
+            throw new RuntimeException("Book not found with id: " + id);
+        }
+        bookRepository.deleteById(id);
+    }
+    public List<Book> getBooks() {
         return bookRepository.findAll();
     }
 
@@ -96,5 +79,40 @@ public class BookService {
             books = bookRepository.findAll(pageable);
         }
         return books.map(bookMapper::toDto);
+    }
+    private Book fillBookData(Book book, BookDTO request) {
+        Genre genre = genreRepository.findByNameIgnoreCase(request.genre())
+                .orElseThrow(() -> new RuntimeException("Genre not found: " + request.genre()));
+        AgeGroup ageGroup = ageGroupRepository.findByNameIgnoreCase(request.ageGroup())
+                .orElseThrow(() -> new RuntimeException("Age group not found: " + request.ageGroup()));
+        Language language = languageRepository.findByCodeIgnoreCase(request.languageCode())
+                .orElseThrow(() -> new RuntimeException("Language not found: " + request.languageCode()));
+
+        book.setTitle(request.title());
+        book.setDescription(request.description());
+        book.setGenre(genre);
+        book.setAgeGroup(ageGroup);
+        book.setPublishedYear(request.publishedYear());
+        book.setLanguage(language);
+        book.setPrice(request.price());
+        book.setStockQuantity(request.stockQuantity());
+        book.setDiscountPercentage(request.discountPercentage());
+        book.setPageCount(request.pageCount());
+        book.setCoverImageUrl(request.coverImageUrl());
+
+        List<Author> authors = request.authors().stream()
+                .map(a -> {
+                    return authorRepository.findByFirstNameIgnoreCaseAndLastNameIgnoreCase(a.firstName(), a.lastName())
+                            .orElseGet(() -> {
+                                Author newAuthor = new Author();
+                                newAuthor.setFirstName(a.firstName());
+                                newAuthor.setLastName(a.lastName());
+                                return authorRepository.save(newAuthor);
+                            });
+                })
+                .collect(Collectors.toList());
+
+        book.setAuthors(authors);
+        return book;
     }
 }
