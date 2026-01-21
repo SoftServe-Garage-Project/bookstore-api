@@ -10,6 +10,8 @@ import com.softserve.bookstoreapi.model.enums.TransactionStatus;
 import com.softserve.bookstoreapi.model.enums.TransactionType;
 import com.softserve.bookstoreapi.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -199,5 +201,15 @@ public class OrderService {
         createTransactionRecord(account, savedOrder, totalOrderAmount);
 
         return mapToDto(savedOrder);
+    }
+
+
+    @Transactional(readOnly = true)
+    public Page<OrderDTO> getUserOrders(String userEmail, Pageable pageable) {
+        Account account = accountRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Page<Order> orders = orderRepository.findByAccount(account, pageable);
+
+        return orders.map(this::mapToDto);
     }
 }
