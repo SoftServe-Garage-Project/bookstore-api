@@ -22,7 +22,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -50,7 +52,7 @@ class PromoCodeServiceTest {
 
     @BeforeEach
     void setUp() {
-        now = LocalDateTime.now();
+        now = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
 
         promoCodeEntity = new PromoCode();
         promoCodeEntity.setId(1L);
@@ -173,13 +175,13 @@ class PromoCodeServiceTest {
         when(promoCodeRepository.findById(1L)).thenReturn(Optional.of(promoCodeEntity));
         when(promoCodeRepository.save(any(PromoCode.class))).thenReturn(promoCodeEntity);
         when(promoCodeMapper.toDto(any(PromoCode.class))).thenReturn(updatedDto);
-        doNothing().when(promoCodeMapper).updateEntityFromDto(any(PromoCodeDTO.class), any(PromoCode.class));
 
         PromoCodeDTO result = promoCodeService.updatePromoCode(1L, updatedDto);
 
         assertThat(result).isNotNull();
         verify(promoCodeRepository, times(1)).findById(1L);
         verify(promoCodeRepository, times(1)).save(any(PromoCode.class));
+        verify(promoCodeMapper, times(1)).updateEntityFromDto(updatedDto, promoCodeEntity);
     }
 
     @Test
@@ -315,7 +317,8 @@ class PromoCodeServiceTest {
                 new BigDecimal("100.00")
         );
 
-        promoCodeEntity.setValidTo(LocalDateTime.now().minusDays(1));
+        LocalDateTime nowUtc = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+        promoCodeEntity.setValidTo(nowUtc.minusDays(1));
 
         when(promoCodeRepository.findByCodeAndIsActiveTrue("SUMMER2024"))
                 .thenReturn(Optional.of(promoCodeEntity));
@@ -334,7 +337,8 @@ class PromoCodeServiceTest {
                 new BigDecimal("100.00")
         );
 
-        promoCodeEntity.setValidFrom(LocalDateTime.now().plusDays(1));
+        LocalDateTime nowUtc = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+        promoCodeEntity.setValidFrom(nowUtc.plusDays(1));
 
         when(promoCodeRepository.findByCodeAndIsActiveTrue("SUMMER2024"))
                 .thenReturn(Optional.of(promoCodeEntity));
@@ -353,8 +357,9 @@ class PromoCodeServiceTest {
                 new BigDecimal("100.00")
         );
 
-        promoCodeEntity.setValidFrom(LocalDateTime.now().minusDays(1));
-        promoCodeEntity.setValidTo(LocalDateTime.now().plusMonths(3));
+        LocalDateTime nowUtc = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+        promoCodeEntity.setValidFrom(nowUtc.minusDays(1));
+        promoCodeEntity.setValidTo(nowUtc.plusMonths(3));
         promoCodeEntity.setCurrentUses(100); // Equal to maxUses
 
         when(promoCodeRepository.findByCodeAndIsActiveTrue("SUMMER2024"))
@@ -369,26 +374,26 @@ class PromoCodeServiceTest {
     @Test
     @DisplayName("incrementUsage: Should increment current uses")
     void incrementUsage_Success() {
-        when(promoCodeRepository.findByCode("SUMMER2024")).thenReturn(Optional.of(promoCodeEntity));
+        when(promoCodeRepository.findByCodeForUpdate("SUMMER2024")).thenReturn(Optional.of(promoCodeEntity));
         when(promoCodeRepository.save(any(PromoCode.class))).thenReturn(promoCodeEntity);
 
         promoCodeService.incrementUsage("SUMMER2024");
 
         assertThat(promoCodeEntity.getCurrentUses()).isEqualTo(1);
-        verify(promoCodeRepository, times(1)).findByCode("SUMMER2024");
+        verify(promoCodeRepository, times(1)).findByCodeForUpdate("SUMMER2024");
         verify(promoCodeRepository, times(1)).save(promoCodeEntity);
     }
 
     @Test
     @DisplayName("incrementUsage: Should throw exception when promo code not found")
     void incrementUsage_NotFound() {
-        when(promoCodeRepository.findByCode("INVALID")).thenReturn(Optional.empty());
+        when(promoCodeRepository.findByCodeForUpdate("INVALID")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> promoCodeService.incrementUsage("INVALID"))
                 .isInstanceOf(PromoCodeNotFoundException.class)
                 .hasMessageContaining("not found");
 
-        verify(promoCodeRepository, times(1)).findByCode("INVALID");
+        verify(promoCodeRepository, times(1)).findByCodeForUpdate("INVALID");
         verify(promoCodeRepository, never()).save(any(PromoCode.class));
     }
 }

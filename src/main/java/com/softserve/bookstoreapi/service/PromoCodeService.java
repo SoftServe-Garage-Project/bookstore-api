@@ -17,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Service
 @RequiredArgsConstructor
@@ -131,7 +133,9 @@ public class PromoCodeService {
             );
         }
 
-        if (promoCode.getValidFrom().isAfter(LocalDateTime.now())) {
+        LocalDateTime nowUtc = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+
+        if (promoCode.getValidFrom().isAfter(nowUtc)) {
             return new PromoCodeValidationResponseDTO(
                     false,
                     "Promo code is not yet valid",
@@ -141,7 +145,7 @@ public class PromoCodeService {
             );
         }
 
-        if (promoCode.getValidTo() != null && promoCode.getValidTo().isBefore(LocalDateTime.now())) {
+        if (promoCode.getValidTo() != null && promoCode.getValidTo().isBefore(nowUtc)) {
             return new PromoCodeValidationResponseDTO(
                     false,
                     "Promo code has expired",
@@ -192,7 +196,7 @@ public class PromoCodeService {
     public void incrementUsage(String code) {
         log.debug("Incrementing usage for promo code: {}", code);
 
-        PromoCode promoCode = promoCodeRepository.findByCode(code)
+        PromoCode promoCode = promoCodeRepository.findByCodeForUpdate(code)
                 .orElseThrow(() -> new PromoCodeNotFoundException("Promo code not found: " + code));
 
         promoCode.setCurrentUses(promoCode.getCurrentUses() + 1);

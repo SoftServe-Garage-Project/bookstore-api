@@ -27,13 +27,19 @@ public class PublicUrlConfig {
                 "/oauth2/**",
                 "/login/oauth2/**",
                 "/api/forgot-password",
-                "/api/reset-password",
-                "/api/book"
+                "/api/reset-password"
         };
 
         @Override
         public boolean matches(HttpServletRequest request) {
             String requestPath = request.getRequestURI();
+            String method = request.getMethod();
+
+            // Allow only GET requests to /api/book endpoints
+            if (requestPath.startsWith("/api/book") && "GET".equalsIgnoreCase(method)) {
+                return true;
+            }
+
             for (String pattern : publicUrls) {
                 if (pathMatcher.match(pattern, requestPath)) {
                     return true;
