@@ -2,6 +2,7 @@ package com.softserve.bookstoreapi.service.impl;
 
 import com.softserve.bookstoreapi.dto.OrderDTO;
 import com.softserve.bookstoreapi.dto.OrderItemDTO;
+import com.softserve.bookstoreapi.dto.BuyNowRequestDTO;
 import com.softserve.bookstoreapi.model.*;
 import com.softserve.bookstoreapi.model.enums.OrderStatus;
 import com.softserve.bookstoreapi.model.enums.PaymentMethod;
@@ -9,6 +10,8 @@ import com.softserve.bookstoreapi.model.enums.TransactionStatus;
 import com.softserve.bookstoreapi.model.enums.TransactionType;
 import com.softserve.bookstoreapi.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -140,5 +143,73 @@ public class OrderService {
                 order.getCreatedAt(),
                 items
         );
+    }
+    @Transactional
+    public OrderDTO buyNow(BuyNowRequestDTO request, String userEmail) {
+
+        Account account = accountRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Book book = bookRepository.findById(request.bookId())
+                .orElseThrow(() -> new RuntimeException("Book not found with ID: " + request.bookId()));
+
+        if (book.getStockQuantity() < request.quantity()) {
+            throw new RuntimeException("Not enough stock for: " + book.getTitle() +
+                    ". Available: " + book.getStockQuantity());
+        }
+
+        BigDecimal originalPrice = book.getPrice();
+        BigDecimal bookDiscount = BigDecimal.ZERO;
+        BigDecimal promoDiscount = BigDecimal.ZERO;
+
+        BigDecimal totalDiscountPercent = bookDiscount.add(promoDiscount);
+        BigDecimal discountAmount = originalPrice
+                .multiply(totalDiscountPercent)
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+
+        BigDecimal finalUnitPrice = originalPrice.subtract(discountAmount);
+        BigDecimal totalOrderAmount = finalUnitPrice.multiply(BigDecimal.valueOf(request.quantity()));
+
+        if (account.getBalance().compareTo(totalOrderAmount) < 0) {
+            throw new RuntimeException("Insufficient funds. Balance: " + account.getBalance() +
+                    ", Required: " + totalOrderAmount);
+        }
+
+        book.setStockQuantity(book.getStockQuantity() - request.quantity());
+        bookRepository.save(book);
+
+        account.setBalance(account.getBalance().subtract(totalOrderAmount));
+        accountRepository.save(account);
+
+        Order order = new Order();
+        order.setAccount(account);
+        order.setTotalAmount(totalOrderAmount);
+        order.setStatus(OrderStatus.PAID);
+        order.setPaymentMethod(PaymentMethod.BALANCE);
+
+        OrderItem orderItem = new OrderItem();
+        orderItem.setOrder(order);
+        orderItem.setBook(book);
+        orderItem.setQuantity(request.quantity());
+        orderItem.setOriginalPrice(originalPrice);
+        orderItem.setBookDiscountPercentage(bookDiscount);
+        orderItem.setPromoDiscountPercentage(promoDiscount);
+        orderItem.setFinalPrice(finalUnitPrice);
+
+        order.setItems(List.of(orderItem));
+        Order savedOrder = orderRepository.save(order);
+        createTransactionRecord(account, savedOrder, totalOrderAmount);
+
+        return mapToDto(savedOrder);
+    }
+
+
+    @Transactional(readOnly = true)
+    public Page<OrderDTO> getUserOrders(String userEmail, Pageable pageable) {
+        Account account = accountRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Page<Order> orders = orderRepository.findByAccount(account, pageable);
+
+        return orders.map(this::mapToDto);
     }
 }

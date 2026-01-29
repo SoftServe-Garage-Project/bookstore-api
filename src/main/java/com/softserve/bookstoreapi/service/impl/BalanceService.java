@@ -1,5 +1,6 @@
 package com.softserve.bookstoreapi.service.impl;
 
+import com.softserve.bookstoreapi.dto.BalanceDTO;
 import com.softserve.bookstoreapi.dto.TopUpDTO;
 import com.softserve.bookstoreapi.dto.TransactionDTO;
 import com.softserve.bookstoreapi.mapper.TransactionMapper;
@@ -53,5 +54,12 @@ public class BalanceService {
         transactionRepository.save(tx);
 
         return transactionMapper.toDto(tx);
+    }
+    @Transactional(readOnly = true)
+    public BalanceDTO getCurrentBalance(String email) {
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return new BalanceDTO(account.getBalance(), "UAH");
     }
 }

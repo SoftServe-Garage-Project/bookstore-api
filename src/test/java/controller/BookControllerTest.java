@@ -29,9 +29,12 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -139,5 +142,45 @@ class BookControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].title").value("Harry Potter"));
+    }
+    @Test
+    @DisplayName("updateBook: Should return 200 and updated DTO")
+    void updateBook_Success() throws Exception {
+        Long bookId = 1L;
+        when(bookService.updateBook(eq(bookId), any(BookDTO.class))).thenReturn(savedBookEntity);
+        when(bookMapper.toDto(any(Book.class))).thenReturn(validBookDto);
+
+        mockMvc.perform(patch("/api/book/{id}", bookId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validBookDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Harry Potter"))
+                .andExpect(jsonPath("$.id").value(1));
+    }
+
+    @Test
+    @DisplayName("updateBook: Should return 400 when validation fails")
+    void updateBook_ValidationFail() throws Exception {
+        Long bookId = 1L;
+        BookDTO invalidDto = new BookDTO(
+                null, null, "Desc", "Genre", "Age", 2020, "EN", List.of(),
+                BigDecimal.TEN, 10, BigDecimal.ZERO, 100, "url"
+        );
+
+        mockMvc.perform(patch("/api/book/{id}", bookId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidDto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("deleteBook: Should return 204 No Content")
+    void deleteBook_Success() throws Exception {
+        Long bookId = 1L;
+
+        mockMvc.perform(delete("/api/book/{id}", bookId))
+                .andExpect(status().isNoContent());
+
+        verify(bookService).deleteBook(bookId);
     }
 }
