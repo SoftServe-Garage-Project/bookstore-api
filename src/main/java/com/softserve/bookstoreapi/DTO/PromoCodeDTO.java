@@ -1,36 +1,43 @@
 package com.softserve.bookstoreapi.dto;
 
 import jakarta.validation.constraints.*;
+import lombok.Data; // Добавь это
+import lombok.NoArgsConstructor; // И это
+import lombok.AllArgsConstructor; // И это
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public record PromoCodeDTO(
-        Long id,
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class PromoCodeDTO {
+
+        private Long id;
 
         @NotBlank(message = "{validation.promocode.code.notblank}")
         @Size(min = 3, max = 20, message = "{validation.promocode.code.size}")
-        String code,
+        private String code;
 
         @NotNull(message = "{validation.promocode.discount.notnull}")
         @DecimalMin(value = "0.01", inclusive = false, message = "{validation.promocode.discount.min}")
         @DecimalMax(value = "99.99", inclusive = true, message = "{validation.promocode.discount.max}")
-        BigDecimal discountPercentage,
+        private BigDecimal discountPercentage;
 
         @Size(max = 255, message = "{validation.promocode.description.size}")
-        String description,
+        private String description;
 
         @NotNull(message = "{validation.promocode.validfrom.notnull}")
-        LocalDateTime validFrom,
+        private LocalDateTime validFrom;
 
-        LocalDateTime validTo,
+        private LocalDateTime validTo;
 
         @Min(value = 1, message = "{validation.promocode.maxuses.min}")
-        Integer maxUses,
+        private Integer maxUses;
 
-        Integer currentUses,
+        private Integer currentUses;
 
         @DecimalMin(value = "0.0", message = "{validation.promocode.minorder.min}")
-        BigDecimal minOrderAmount,
+        private BigDecimal minOrderAmount;
 
-        Boolean isActive
-) {}
+        private Boolean isActive;
+}
