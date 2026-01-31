@@ -22,11 +22,13 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/checkout")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderDTO> checkout(Principal principal) {
         OrderDTO order = orderService.checkout(principal.getName());
         return ResponseEntity.ok(order);
     }
     @PostMapping("/buy-now")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderDTO> buyNow(@Valid @RequestBody BuyNowRequestDTO request, Principal principal) {
         OrderDTO order = orderService.buyNow(request,principal.getName());
         return ResponseEntity.ok(order);
