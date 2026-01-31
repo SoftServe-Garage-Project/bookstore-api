@@ -27,6 +27,7 @@ public class ReviewController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteReview(@PathVariable Long id, Principal principal) {
         reviewService.deleteReview(id, principal.getName());
         return ResponseEntity.noContent().build();
