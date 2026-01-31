@@ -33,10 +33,10 @@ public class PromoCodeService {
 
     @Transactional
     public PromoCodeDTO createPromoCode(PromoCodeDTO promoCodeDTO) {
-        log.info("Creating new promo code: {}", promoCodeDTO.code());
+        log.info("Creating new promo code: {}", promoCodeDTO.getCode());
 
-        if (promoCodeRepository.existsByCode(promoCodeDTO.code())) {
-            throw new InvalidPromoCodeException("Promo code with code '" + promoCodeDTO.code() + "' already exists");
+        if (promoCodeRepository.existsByCode(promoCodeDTO.getCode())) {
+            throw new InvalidPromoCodeException("Promo code with code '" + promoCodeDTO.getCode() + "' already exists");
         }
 
         PromoCode promoCode = promoCodeMapper.toEntity(promoCodeDTO);
@@ -66,9 +66,9 @@ public class PromoCodeService {
         PromoCode existingPromoCode = promoCodeRepository.findById(id)
                 .orElseThrow(() -> new PromoCodeNotFoundException(PROMO_CODE_NOT_FOUND_MSG + id));
 
-        if (!existingPromoCode.getCode().equals(promoCodeDTO.code()) &&
-                promoCodeRepository.existsByCode(promoCodeDTO.code())) {
-            throw new InvalidPromoCodeException("Promo code with code '" + promoCodeDTO.code() + "' already exists");
+        if (!existingPromoCode.getCode().equals(promoCodeDTO.getCode()) &&
+                promoCodeRepository.existsByCode(promoCodeDTO.getCode())) {
+            throw new InvalidPromoCodeException("Promo code with code '" + promoCodeDTO.getCode() + "' already exists");
         }
 
         promoCodeMapper.updateEntityFromDto(promoCodeDTO, existingPromoCode);

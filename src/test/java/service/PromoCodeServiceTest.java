@@ -91,8 +91,8 @@ class PromoCodeServiceTest {
         PromoCodeDTO result = promoCodeService.createPromoCode(promoCodeDto);
 
         assertThat(result).isNotNull();
-        assertThat(result.code()).isEqualTo("SUMMER2024");
-        assertThat(result.discountPercentage()).isEqualByComparingTo(new BigDecimal("15.00"));
+        assertThat(result.getCode()).isEqualTo("SUMMER2024");
+        assertThat(result.getDiscountPercentage()).isEqualByComparingTo(new BigDecimal("15.00"));
 
         verify(promoCodeRepository, times(1)).existsByCode("SUMMER2024");
         verify(promoCodeRepository, times(1)).save(any(PromoCode.class));
@@ -124,7 +124,7 @@ class PromoCodeServiceTest {
 
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).code()).isEqualTo("SUMMER2024");
+        assertThat(result.getContent().get(0).getCode()).isEqualTo("SUMMER2024");
 
         verify(promoCodeRepository, times(1)).findAll(pageable);
     }
@@ -138,8 +138,8 @@ class PromoCodeServiceTest {
         PromoCodeDTO result = promoCodeService.getPromoCodeById(1L);
 
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(1L);
-        assertThat(result.code()).isEqualTo("SUMMER2024");
+        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.getCode()).isEqualTo("SUMMER2024");
 
         verify(promoCodeRepository, times(1)).findById(1L);
     }
