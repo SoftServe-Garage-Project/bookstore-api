@@ -181,6 +181,18 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.SERVICE_UNAVAILABLE, "Database Error", "error.database.access");
     }
 
+    @ExceptionHandler(com.softserve.bookstoreapi.exception.PromoCodeNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePromoCodeNotFound(com.softserve.bookstoreapi.exception.PromoCodeNotFoundException ex) {
+        log.warn("Promo code not found: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "Promo Code Not Found", "error.promocode.not.found");
+    }
+
+    @ExceptionHandler(InvalidPromoCodeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPromoCode(InvalidPromoCodeException ex) {
+        log.warn("Invalid promo code: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid Promo Code", ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Unexpected error occurred", ex);

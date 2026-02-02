@@ -33,6 +33,13 @@ public class PublicUrlConfig {
         @Override
         public boolean matches(HttpServletRequest request) {
             String requestPath = request.getRequestURI();
+            String method = request.getMethod();
+
+            // Allow only GET requests to /api/book endpoints
+            if (requestPath.startsWith("/api/book") && "GET".equalsIgnoreCase(method)) {
+                return true;
+            }
+
             for (String pattern : publicUrls) {
                 if (pathMatcher.match(pattern, requestPath)) {
                     return true;
