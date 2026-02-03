@@ -11,6 +11,7 @@ import com.softserve.bookstoreapi.repository.AccountRepository;
 import com.softserve.bookstoreapi.security.Token;
 import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,6 +39,19 @@ public class AccountService {
     private final TokenSerializer tokenSerializer;
     private final RefreshTokenService refreshTokenService;
 
+    @Getter
+    public static class LoginResult {
+        private final LoginResponseDTO responseDTO;
+        private final String accessToken;
+        private final String refreshToken;
+
+        public LoginResult(LoginResponseDTO responseDTO, String accessToken, String refreshToken) {
+            this.responseDTO = responseDTO;
+            this.accessToken = accessToken;
+            this.refreshToken = refreshToken;
+        }
+    }
+
     public Optional<Account> findByEmail(String email) {
         return accountRepository.findByEmail(email);
     }
@@ -46,7 +60,7 @@ public class AccountService {
         return accountRepository.existsByEmail(email);
     }
 
-    public LoginResponseDTO login(LoginRequestDTO loginRequest) {
+    public LoginResult login(LoginRequestDTO loginRequest) {
         log.debug("Login attempt for user: {}", obfuscate(loginRequest.email()));
 
         Authentication authentication = authenticationManager.authenticate(
@@ -66,20 +80,20 @@ public class AccountService {
         
         refreshTokenService.saveRefreshToken(refreshToken);
 
-        return buildLoginResponse(authentication, accessTokenString, refreshTokenString);
+        LoginResponseDTO responseDTO = buildLoginResponse(authentication);
+
+        return new LoginResult(responseDTO, accessTokenString, refreshTokenString);
     }
 
 
-    private LoginResponseDTO buildLoginResponse(Authentication authentication, String accessToken, String refreshToken) {
+    private LoginResponseDTO buildLoginResponse(Authentication authentication) {
         List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
         return new LoginResponseDTO(
                 authentication.getName(),
-                roles,
-                accessToken,
-                refreshToken
+                roles
         );
     }
 
@@ -122,6 +136,11 @@ public class AccountService {
         accountRepository.save(account);
         
         log.info("Password changed for user: {}", obfuscate(email));
+    }
+
+    public Account getAccountByEmail(String email) {
+        return accountRepository.findByEmail(email)
+                .orElseThrow(() -> new com.softserve.bookstoreapi.exception.AccountNotFoundException("Account not found for email: " + email));
     }
 
     @Transactional

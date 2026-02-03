@@ -3,6 +3,7 @@ package com.softserve.bookstoreapi.security.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.softserve.bookstoreapi.dto.LoginResponseDTO;
 import com.softserve.bookstoreapi.model.Account;
+import com.softserve.bookstoreapi.security.CookieUtil;
 import com.softserve.bookstoreapi.security.Token;
 import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
@@ -52,7 +53,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         TokenUser tokenUser = new TokenUser(
                 account.getEmail(),
-                account.getPassword(),
+                "[PROTECTED]", // OAuth2 users don't use password authentication
                 account.getAuthorities(),
                 null
         );
@@ -66,15 +67,16 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String refreshTokenString = tokenSerializer.serialize(refreshToken);
         refreshTokenService.saveRefreshToken(refreshToken);
 
+        // Set tokens in HTTP-only cookies
+        CookieUtil.setAuthenticationCookies(response, accessTokenString, refreshTokenString);
+
         List<String> roles = account.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
         LoginResponseDTO loginResponse = new LoginResponseDTO(
                 account.getEmail(),
-                roles,
-                accessTokenString,
-                refreshTokenString
+                roles
         );
 
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

@@ -1,6 +1,5 @@
 package com.softserve.bookstoreapi.service.impl;
 
-import com.softserve.bookstoreapi.dto.RefreshRequestDTO;
 import com.softserve.bookstoreapi.dto.RefreshResponseDTO;
 import com.softserve.bookstoreapi.exception.AccountNotFoundException;
 import com.softserve.bookstoreapi.exception.InvalidJwtToken;
@@ -12,10 +11,13 @@ import com.softserve.bookstoreapi.model.Account;
 import com.softserve.bookstoreapi.model.RefreshToken;
 import com.softserve.bookstoreapi.repository.AccountRepository;
 import com.softserve.bookstoreapi.repository.RefreshTokenRepository;
+import com.softserve.bookstoreapi.security.CookieUtil;
 import com.softserve.bookstoreapi.security.Token;
 import com.softserve.bookstoreapi.security.TokenDeserializer;
 import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -126,12 +128,15 @@ public class RefreshTokenService {
         });
     }
 
-
     @Transactional
-    public RefreshResponseDTO refreshTokens(RefreshRequestDTO request) {
+    public RefreshResult refreshTokens(HttpServletRequest request) {
         log.debug("Refresh token request received");
 
-        Token refreshToken = deserializeAndValidateToken(request.refreshToken());
+        // Get refresh token from cookie
+        String refreshTokenString = CookieUtil.getCookieValue(request, CookieUtil.REFRESH_TOKEN_COOKIE_NAME)
+                .orElseThrow(() -> new InvalidJwtToken("Refresh token not found in cookies"));
+
+        Token refreshToken = deserializeAndValidateToken(refreshTokenString);
         Account account = getAccountForToken(refreshToken);
 
         return generateNewTokens(account);
@@ -180,7 +185,7 @@ public class RefreshTokenService {
                 .orElseThrow(() -> new AccountNotFoundException("User not found: " + obfuscate(token.subject())));
     }
 
-    private RefreshResponseDTO generateNewTokens(Account account) {
+    private RefreshResult generateNewTokens(Account account) {
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 account.getEmail(),
                 null,
@@ -196,7 +201,22 @@ public class RefreshTokenService {
 
         log.info("Successfully refreshed tokens for user: {}", obfuscate(account.getEmail()));
 
-        return new RefreshResponseDTO(accessTokenString, refreshTokenString);
+        RefreshResponseDTO responseDTO = new RefreshResponseDTO("Tokens refreshed successfully");
+
+        return new RefreshResult(responseDTO, accessTokenString, refreshTokenString);
+    }
+
+    @Getter
+    public static class RefreshResult {
+        private final RefreshResponseDTO responseDTO;
+        private final String accessToken;
+        private final String refreshToken;
+
+        public RefreshResult(RefreshResponseDTO responseDTO, String accessToken, String refreshToken) {
+            this.responseDTO = responseDTO;
+            this.accessToken = accessToken;
+            this.refreshToken = refreshToken;
+        }
     }
 
     @Transactional
