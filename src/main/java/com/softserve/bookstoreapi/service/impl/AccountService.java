@@ -14,6 +14,7 @@ import com.softserve.bookstoreapi.security.TokenSerializer;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -138,14 +139,20 @@ public class AccountService {
         log.info("Password changed for user: {}", obfuscate(email));
     }
 
+    @Transactional(readOnly = true)
     public Account getAccountByEmail(String email) {
-        return accountRepository.findByEmail(email)
+        Account account = accountRepository.findByEmail(email)
                 .orElseThrow(() -> new com.softserve.bookstoreapi.exception.AccountNotFoundException("Account not found for email: " + email));
+
+        // Force initialization of lazy-loaded permissions collection within transaction
+        Hibernate.initialize(account.getPermissions());
+
+        return account;
     }
 
     @Transactional
     public Account findOrCreateOAuth2Account(String email, String name) {
-        return accountRepository.findByEmail(email)
+        Account account = accountRepository.findByEmail(email)
                 .orElseGet(() -> {
                     Account newAccount = new Account();
                     String username = name != null ? name : (email != null ? email.split("@")[0] : "user");
@@ -159,5 +166,10 @@ public class AccountService {
                     log.info("Created new OAuth2 account for email: {}", obfuscate(email));
                     return savedAccount;
                 });
+
+        // Force initialization of lazy-loaded permissions collection within transaction
+        Hibernate.initialize(account.getPermissions());
+
+        return account;
     }
 }
