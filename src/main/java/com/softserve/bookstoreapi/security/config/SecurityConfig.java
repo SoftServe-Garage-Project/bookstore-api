@@ -150,9 +150,8 @@ public class SecurityConfig {
             AccountService accountService,
             TokenFactory tokenFactory,
             TokenSerializer tokenSerializer,
-            RefreshTokenService refreshTokenService,
-            ObjectMapper objectMapper) {
-        return new OAuth2SuccessHandler(accountService, tokenFactory, tokenSerializer, refreshTokenService, objectMapper);
+            RefreshTokenService refreshTokenService) {
+        return new OAuth2SuccessHandler(accountService, tokenFactory, tokenSerializer, refreshTokenService);
     }
 
     @Bean

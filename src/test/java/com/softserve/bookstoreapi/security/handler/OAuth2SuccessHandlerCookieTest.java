@@ -1,7 +1,5 @@
 package com.softserve.bookstoreapi.security.handler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softserve.bookstoreapi.dto.LoginResponseDTO;
 import com.softserve.bookstoreapi.model.Account;
 import com.softserve.bookstoreapi.model.enums.UserRole;
 import com.softserve.bookstoreapi.security.Token;
@@ -19,15 +17,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
@@ -37,8 +32,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * Tests for OAuth2SuccessHandler with HTTP-only cookie authentication.
- * Updated to verify cookies are set instead of tokens in JSON response.
+ * Tests for OAuth2SuccessHandler with HTTP-only cookie authentication and redirect.
+ * Verifies that cookies are set and proper redirect happens.
  */
 @ExtendWith(MockitoExtension.class)
 class OAuth2SuccessHandlerCookieTest {
@@ -56,9 +51,6 @@ class OAuth2SuccessHandlerCookieTest {
     private RefreshTokenService refreshTokenService;
 
     @Mock
-    private ObjectMapper objectMapper;
-
-    @Mock
     private HttpServletRequest request;
 
     @Mock
@@ -67,14 +59,9 @@ class OAuth2SuccessHandlerCookieTest {
     @InjectMocks
     private OAuth2SuccessHandler oAuth2SuccessHandler;
 
-    private StringWriter stringWriter;
-    private PrintWriter printWriter;
-
     @BeforeEach
-    void setUp() throws Exception {
-        stringWriter = new StringWriter();
-        printWriter = new PrintWriter(stringWriter);
-        when(response.getWriter()).thenReturn(printWriter);
+    void setUp() {
+        // No PrintWriter needed since we're redirecting, not writing JSON
     }
 
     @Test
@@ -94,14 +81,11 @@ class OAuth2SuccessHandlerCookieTest {
         String accessTokenString = "access-token-string";
         String refreshTokenString = "refresh-token-string";
 
-        String expectedJson = "{\"email\":\"test@example.com\",\"roles\":[\"ROLE_CUSTOMER\"]}";
-
         when(accountService.findOrCreateOAuth2Account(email, name)).thenReturn(existingAccount);
         when(tokenFactory.createAccessToken(any(Authentication.class))).thenReturn(accessToken);
         when(tokenFactory.createRefreshToken(any(Authentication.class))).thenReturn(refreshToken);
         when(tokenSerializer.serialize(accessToken)).thenReturn(accessTokenString);
         when(tokenSerializer.serialize(refreshToken)).thenReturn(refreshTokenString);
-        when(objectMapper.writeValueAsString(any(LoginResponseDTO.class))).thenReturn(expectedJson);
 
         oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authentication);
 
@@ -131,15 +115,8 @@ class OAuth2SuccessHandlerCookieTest {
         assertThat(refreshTokenCookie.isHttpOnly()).isTrue();
         assertThat(refreshTokenCookie.getSecure()).isTrue();
 
-        verify(response).setContentType(MediaType.APPLICATION_JSON_VALUE);
-        verify(response).setCharacterEncoding("UTF-8");
-        verify(response).setStatus(HttpServletResponse.SC_OK);
-
-        printWriter.flush();
-        String responseBody = stringWriter.toString();
-        assertThat(responseBody).isEqualTo(expectedJson);
-        assertThat(responseBody).doesNotContain("accessToken");
-        assertThat(responseBody).doesNotContain("refreshToken");
+        // Verify redirect to frontend success page
+        verify(response).sendRedirect("https://localhost:3000/");
     }
 
     @Test
@@ -159,14 +136,11 @@ class OAuth2SuccessHandlerCookieTest {
         String accessTokenString = "access-token-string";
         String refreshTokenString = "refresh-token-string";
 
-        String expectedJson = "{\"email\":\"newuser@example.com\",\"roles\":[\"ROLE_CUSTOMER\"]}";
-
         when(accountService.findOrCreateOAuth2Account(email, name)).thenReturn(savedAccount);
         when(tokenFactory.createAccessToken(any(Authentication.class))).thenReturn(accessToken);
         when(tokenFactory.createRefreshToken(any(Authentication.class))).thenReturn(refreshToken);
         when(tokenSerializer.serialize(accessToken)).thenReturn(accessTokenString);
         when(tokenSerializer.serialize(refreshToken)).thenReturn(refreshTokenString);
-        when(objectMapper.writeValueAsString(any(LoginResponseDTO.class))).thenReturn(expectedJson);
 
         oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authentication);
 
@@ -182,13 +156,8 @@ class OAuth2SuccessHandlerCookieTest {
         List<Cookie> cookies = cookieCaptor.getAllValues();
         assertThat(cookies).hasSize(2);
 
-        verify(response).setContentType(MediaType.APPLICATION_JSON_VALUE);
-        verify(response).setCharacterEncoding("UTF-8");
-        verify(response).setStatus(HttpServletResponse.SC_OK);
-
-        printWriter.flush();
-        String responseBody = stringWriter.toString();
-        assertThat(responseBody).isEqualTo(expectedJson);
+        // Verify redirect to frontend success page
+        verify(response).sendRedirect("https://localhost:3000/");
     }
 
     @Test
@@ -208,7 +177,6 @@ class OAuth2SuccessHandlerCookieTest {
         when(tokenFactory.createAccessToken(any(Authentication.class))).thenReturn(accessToken);
         when(tokenFactory.createRefreshToken(any(Authentication.class))).thenReturn(refreshToken);
         when(tokenSerializer.serialize(any(Token.class))).thenReturn("token-string");
-        when(objectMapper.writeValueAsString(any(LoginResponseDTO.class))).thenReturn("{}");
 
         oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authentication);
 
@@ -220,6 +188,28 @@ class OAuth2SuccessHandlerCookieTest {
 
         List<Cookie> cookies = cookieCaptor.getAllValues();
         assertThat(cookies).hasSize(2);
+
+        // Verify redirect to frontend success page
+        verify(response).sendRedirect("https://localhost:3000/");
+    }
+
+    @Test
+    void shouldRedirectToErrorPageOnException() throws Exception {
+        String email = "error@example.com";
+        String name = "Error User";
+        String provider = "google";
+
+        OAuth2User oAuth2User = createOAuth2User(email, name);
+        OAuth2AuthenticationToken authentication = createOAuth2Authentication(oAuth2User, provider);
+
+        // Simulate exception during account lookup
+        when(accountService.findOrCreateOAuth2Account(email, name))
+                .thenThrow(new RuntimeException("Database error"));
+
+        oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authentication);
+
+        // Verify redirect to frontend error page
+        verify(response).sendRedirect("https://localhost:3000/login?error=oauth2_failed");
     }
 
     // Helper methods
