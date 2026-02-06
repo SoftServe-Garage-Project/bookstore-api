@@ -66,7 +66,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             CookieUtil.setAuthenticationCookies(response, accessTokenString, refreshTokenString);
 
             // Redirect to frontend success page
-            response.sendRedirect("https://localhost:3000/");
+            response.sendRedirect("http://localhost:3000/?auth_callback=true");
         } catch (Exception e) {
             log.error("OAuth2 authentication success handler failed", e);
             response.sendRedirect("https://localhost:3000/login?error=oauth2_failed");
