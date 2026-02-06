@@ -116,7 +116,7 @@ class OAuth2SuccessHandlerCookieTest {
         assertThat(refreshTokenCookie.getSecure()).isTrue();
 
         // Verify redirect to frontend success page
-        verify(response).sendRedirect("https://localhost:3000/");
+        verify(response).sendRedirect("https://localhost:3000/?auth_callback=true");
     }
 
     @Test
@@ -157,7 +157,7 @@ class OAuth2SuccessHandlerCookieTest {
         assertThat(cookies).hasSize(2);
 
         // Verify redirect to frontend success page
-        verify(response).sendRedirect("https://localhost:3000/");
+        verify(response).sendRedirect("https://localhost:3000/?auth_callback=true");
     }
 
     @Test
@@ -190,7 +190,7 @@ class OAuth2SuccessHandlerCookieTest {
         assertThat(cookies).hasSize(2);
 
         // Verify redirect to frontend success page
-        verify(response).sendRedirect("https://localhost:3000/");
+        verify(response).sendRedirect("https://localhost:3000/?auth_callback=true");
     }
 
     @Test
