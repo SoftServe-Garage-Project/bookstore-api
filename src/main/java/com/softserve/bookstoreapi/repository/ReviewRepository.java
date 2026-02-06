@@ -1,0 +1,11 @@
+package com.softserve.bookstoreapi.repository;
+
+import com.softserve.bookstoreapi.model.Account;
+import com.softserve.bookstoreapi.model.Book;
+import com.softserve.bookstoreapi.model.Review;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+public interface ReviewRepository extends JpaRepository<Review, Long> {
+    boolean existsByAccountAndBook(Account account, Book book);
+}
