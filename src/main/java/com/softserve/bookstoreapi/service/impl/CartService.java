@@ -78,7 +78,29 @@ public class CartService {
         }
         cartItemRepository.delete(item);
     }
+    @Transactional
+    public CartItemResponseDTO updateCartItemQuantity(Long cartItemId, int newQuantity, String userEmail) {
+        CartItem item = cartItemRepository.findById(cartItemId)
+                .orElseThrow(() -> new RuntimeException("Cart item not found"));
 
+        if (!item.getCart().getUser().getEmail().equals(userEmail)) {
+            throw new RuntimeException("Access denied: You can only modify your own cart");
+        }
+        Book book = item.getBook();
+        if (book.getStockQuantity() < newQuantity) {
+            throw new RuntimeException("Not enough stock. Available: " + book.getStockQuantity());
+        }
+
+        item.setQuantity(newQuantity);
+        CartItem savedItem = cartItemRepository.save(item);
+        return new CartItemResponseDTO(
+                savedItem.getId(),
+                savedItem.getBook().getId(),
+                savedItem.getBook().getTitle(),
+                savedItem.getQuantity(),
+                savedItem.getBook().getPrice()
+        );
+    }
 
     @Transactional
     public CartDTO getUserCart(String userEmail) {

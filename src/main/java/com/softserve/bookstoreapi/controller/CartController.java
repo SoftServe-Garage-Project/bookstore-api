@@ -3,6 +3,7 @@ package com.softserve.bookstoreapi.controller;
 import com.softserve.bookstoreapi.dto.CartDTO;
 import com.softserve.bookstoreapi.dto.CartItemRequestDTO;
 import com.softserve.bookstoreapi.dto.CartItemResponseDTO;
+import com.softserve.bookstoreapi.dto.CartItemUpdateDTO;
 import com.softserve.bookstoreapi.service.impl.CartService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,5 +36,14 @@ public class CartController {
     public ResponseEntity<CartDTO> getCart(Principal principal) {
         CartDTO cartDTO = cartService.getUserCart(principal.getName());
         return ResponseEntity.ok(cartDTO);
+    }
+    @PutMapping("/items/{itemId}")
+    public ResponseEntity<CartItemResponseDTO> updateCartItem(
+            @PathVariable Long itemId,
+            @Valid @RequestBody CartItemUpdateDTO request,
+            Principal principal
+    ) {
+        CartItemResponseDTO response = cartService.updateCartItemQuantity(itemId, request.quantity(), principal.getName());
+        return ResponseEntity.ok(response);
     }
 }
