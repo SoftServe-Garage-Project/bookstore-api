@@ -1,6 +1,7 @@
 package com.softserve.bookstoreapi.controller;
 
 import com.softserve.bookstoreapi.dto.BuyNowRequestDTO;
+import com.softserve.bookstoreapi.dto.CheckoutRequestDTO;
 import com.softserve.bookstoreapi.dto.OrderDTO;
 import com.softserve.bookstoreapi.service.impl.OrderService;
 import jakarta.validation.Valid;
@@ -22,9 +23,10 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/checkout")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<OrderDTO> checkout(Principal principal) {
-        OrderDTO order = orderService.checkout(principal.getName());
+    public ResponseEntity<OrderDTO> checkout(
+            @RequestBody(required = false) CheckoutRequestDTO request, Principal principal) {
+        String code = (request != null) ? request.promoCode() : null;
+        OrderDTO order = orderService.checkout(principal.getName(), code);
         return ResponseEntity.ok(order);
     }
     @PostMapping("/buy-now")

@@ -1,14 +1,13 @@
 package com.softserve.bookstoreapi.service.impl;
 
-import com.softserve.bookstoreapi.dto.OrderDTO;
-import com.softserve.bookstoreapi.dto.OrderItemDTO;
-import com.softserve.bookstoreapi.dto.BuyNowRequestDTO;
+import com.softserve.bookstoreapi.dto.*;
 import com.softserve.bookstoreapi.model.*;
 import com.softserve.bookstoreapi.model.enums.OrderStatus;
 import com.softserve.bookstoreapi.model.enums.PaymentMethod;
 import com.softserve.bookstoreapi.model.enums.TransactionStatus;
 import com.softserve.bookstoreapi.model.enums.TransactionType;
 import com.softserve.bookstoreapi.repository.*;
+import com.softserve.bookstoreapi.service.PromoCodeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,9 +29,11 @@ public class OrderService {
     private final AccountRepository accountRepository;
     private final BookRepository bookRepository;
     private final TransactionRepository transactionRepository;
+    private final PromoCodeService promoCodeService;
+    private final PromoCodeRepository promoCodeRepository;
 
     @Transactional
-    public OrderDTO checkout(String userEmail) {
+    public OrderDTO checkout(String userEmail, String promoCode) {
 
         Cart cart = cartRepository.findByUserEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Cart not found"));
@@ -43,6 +44,33 @@ public class OrderService {
 
         Account account = cart.getUser();
 
+        BigDecimal baseTotalAmount = BigDecimal.ZERO;
+        for (CartItem item : cart.getCartItems()) {
+            BigDecimal itemBaseTotal = item.getBook().getPrice()
+                    .multiply(BigDecimal.valueOf(item.getQuantity()));
+            baseTotalAmount = baseTotalAmount.add(itemBaseTotal);
+        }
+
+        BigDecimal promoDiscountPercent = BigDecimal.ZERO;
+        PromoCode usedPromoCode = null;
+
+        if (promoCode != null && !promoCode.isBlank()) {
+            PromoCodeValidationRequestDTO validationRequest =
+                    new PromoCodeValidationRequestDTO(promoCode, baseTotalAmount);
+
+            PromoCodeValidationResponseDTO validationResponse =
+                    promoCodeService.validatePromoCode(validationRequest);
+
+            if (!validationResponse.valid()) {
+                throw new RuntimeException("Invalid promo code: " + validationResponse.message());
+            }
+
+            promoDiscountPercent = validationResponse.discountPercentage();
+
+            usedPromoCode = promoCodeRepository.findByCodeAndIsActiveTrue(promoCode)
+                    .orElseThrow(() -> new RuntimeException("Promo code entity not found"));
+        }
+
         BigDecimal totalOrderAmount = BigDecimal.ZERO;
         List<Book> booksToUpdate = new ArrayList<>();
         List<OrderItem> orderItems = new ArrayList<>();
@@ -51,6 +79,10 @@ public class OrderService {
         order.setAccount(account);
         order.setStatus(OrderStatus.PAID);
         order.setPaymentMethod(PaymentMethod.BALANCE);
+
+        if (usedPromoCode != null) {
+            order.setPromoCode(usedPromoCode);
+        }
 
         for (CartItem cartItem : cart.getCartItems()) {
             Book book = cartItem.getBook();
@@ -64,12 +96,17 @@ public class OrderService {
 
             BigDecimal originalPrice = book.getPrice();
             BigDecimal bookDiscount = BigDecimal.ZERO;
-            BigDecimal promoDiscount = BigDecimal.ZERO;
 
-            BigDecimal totalDiscountPercent = bookDiscount.add(promoDiscount);
+            BigDecimal totalDiscountPercent = bookDiscount.add(promoDiscountPercent);
+
+            if (totalDiscountPercent.compareTo(BigDecimal.valueOf(100)) > 0) {
+                totalDiscountPercent = BigDecimal.valueOf(100);
+            }
+
             BigDecimal discountAmount = originalPrice
                     .multiply(totalDiscountPercent)
                     .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+
             BigDecimal finalUnitPrice = originalPrice.subtract(discountAmount);
 
             BigDecimal lineItemTotal = finalUnitPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
@@ -81,7 +118,8 @@ public class OrderService {
             orderItem.setQuantity(cartItem.getQuantity());
             orderItem.setOriginalPrice(originalPrice);
             orderItem.setBookDiscountPercentage(bookDiscount);
-            orderItem.setPromoDiscountPercentage(promoDiscount);
+
+            orderItem.setPromoDiscountPercentage(promoDiscountPercent);
             orderItem.setFinalPrice(finalUnitPrice);
 
             orderItems.add(orderItem);
@@ -102,6 +140,10 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
 
         createTransactionRecord(account, savedOrder, totalOrderAmount);
+
+        if (usedPromoCode != null) {
+            promoCodeService.incrementUsage(usedPromoCode.getCode());
+        }
 
         cartItemRepository.deleteAll(cart.getCartItems());
         cart.getCartItems().clear();
@@ -160,9 +202,34 @@ public class OrderService {
 
         BigDecimal originalPrice = book.getPrice();
         BigDecimal bookDiscount = BigDecimal.ZERO;
-        BigDecimal promoDiscount = BigDecimal.ZERO;
+        BigDecimal promoDiscountPercent = BigDecimal.ZERO;
+        PromoCode usedPromoCode = null;
 
-        BigDecimal totalDiscountPercent = bookDiscount.add(promoDiscount);
+        if (request.promoCode() != null && !request.promoCode().isBlank()) {
+            BigDecimal baseTotalAmount = originalPrice.multiply(BigDecimal.valueOf(request.quantity()));
+
+            PromoCodeValidationRequestDTO validationRequest =
+                    new PromoCodeValidationRequestDTO(request.promoCode(), baseTotalAmount);
+
+            PromoCodeValidationResponseDTO validationResponse =
+                    promoCodeService.validatePromoCode(validationRequest);
+
+            if (!validationResponse.valid()) {
+                throw new RuntimeException("Invalid promo code: " + validationResponse.message());
+            }
+
+            promoDiscountPercent = validationResponse.discountPercentage();
+
+            usedPromoCode = promoCodeRepository.findByCodeAndIsActiveTrue(request.promoCode())
+                    .orElseThrow(() -> new RuntimeException("Promo code entity not found"));
+        }
+
+        BigDecimal totalDiscountPercent = bookDiscount.add(promoDiscountPercent);
+
+        if (totalDiscountPercent.compareTo(BigDecimal.valueOf(100)) > 0) {
+            totalDiscountPercent = BigDecimal.valueOf(100);
+        }
+
         BigDecimal discountAmount = originalPrice
                 .multiply(totalDiscountPercent)
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
@@ -181,11 +248,16 @@ public class OrderService {
         account.setBalance(account.getBalance().subtract(totalOrderAmount));
         accountRepository.save(account);
 
+        // 6. Создание заказа
         Order order = new Order();
         order.setAccount(account);
         order.setTotalAmount(totalOrderAmount);
         order.setStatus(OrderStatus.PAID);
         order.setPaymentMethod(PaymentMethod.BALANCE);
+
+        if (usedPromoCode != null) {
+            order.setPromoCode(usedPromoCode);
+        }
 
         OrderItem orderItem = new OrderItem();
         orderItem.setOrder(order);
@@ -193,12 +265,18 @@ public class OrderService {
         orderItem.setQuantity(request.quantity());
         orderItem.setOriginalPrice(originalPrice);
         orderItem.setBookDiscountPercentage(bookDiscount);
-        orderItem.setPromoDiscountPercentage(promoDiscount);
+
+        orderItem.setPromoDiscountPercentage(promoDiscountPercent);
         orderItem.setFinalPrice(finalUnitPrice);
 
         order.setItems(List.of(orderItem));
         Order savedOrder = orderRepository.save(order);
+
         createTransactionRecord(account, savedOrder, totalOrderAmount);
+
+        if (usedPromoCode != null) {
+            promoCodeService.incrementUsage(usedPromoCode.getCode());
+        }
 
         return mapToDto(savedOrder);
     }
