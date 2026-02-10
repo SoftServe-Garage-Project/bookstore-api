@@ -96,41 +96,49 @@ class BookServiceTest {
     @Test
     @DisplayName("createBook: Fail - Should throw Exception when Genre not found")
     void createBook_GenreNotFound() {
+        when(languageRepository.findByCodeIgnoreCase("EN")).thenReturn(Optional.of(mockLanguage));
+
+        when(bookRepository.findByTitleIgnoreCaseAndPublishedYearAndLanguage(any(), any(), any()))
+                .thenReturn(java.util.Collections.emptyList());
         when(genreRepository.findByNameIgnoreCase("Fantasy")).thenReturn(Optional.empty());
         assertThatThrownBy(() -> bookService.createBook(validRequest))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Genre not found");
-
         verify(bookRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("createBook: Fail - Should throw Exception when AgeGroup not found")
     void createBook_AgeGroupNotFound() {
+        when(languageRepository.findByCodeIgnoreCase("EN")).thenReturn(Optional.of(mockLanguage));
+        when(bookRepository.findByTitleIgnoreCaseAndPublishedYearAndLanguage(any(), any(), any()))
+                .thenReturn(java.util.Collections.emptyList());
         when(genreRepository.findByNameIgnoreCase("Fantasy")).thenReturn(Optional.of(mockGenre));
-        when(ageGroupRepository.findByNameIgnoreCase("Teen")).thenReturn(Optional.empty());
 
+        when(ageGroupRepository.findByNameIgnoreCase("Teen")).thenReturn(Optional.empty());
         assertThatThrownBy(() -> bookService.createBook(validRequest))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Age group not found");
+
+        verify(bookRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("createBook: Fail - Should throw Exception when Language not found")
     void createBook_LanguageNotFound() {
-        when(genreRepository.findByNameIgnoreCase("Fantasy")).thenReturn(Optional.of(mockGenre));
-        when(ageGroupRepository.findByNameIgnoreCase("Teen")).thenReturn(Optional.of(mockAgeGroup));
         when(languageRepository.findByCodeIgnoreCase("EN")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> bookService.createBook(validRequest))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Language not found");
+
+        verify(bookRepository, never()).findByTitleIgnoreCaseAndPublishedYearAndLanguage(any(), any(), any());
     }
 
     @Test
     @DisplayName("getBooks: Filter by Genre only (Success)")
     void getBooks_ByGenre_Success() {
-        String genreInput = " Fantasy "; // Проверяем trim()
+        String genreInput = " Fantasy ";
         when(genreRepository.findByNameIgnoreCase("Fantasy")).thenReturn(Optional.of(mockGenre));
 
         Page<Book> mockPage = new PageImpl<>(List.of(new Book()));

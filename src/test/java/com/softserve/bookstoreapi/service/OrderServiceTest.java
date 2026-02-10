@@ -36,6 +36,9 @@ class OrderServiceTest {
     @Mock private BookRepository bookRepository;
     @Mock private TransactionRepository transactionRepository;
 
+    @Mock private PromoCodeService promoCodeService;
+    @Mock private PromoCodeRepository promoCodeRepository;
+
     @InjectMocks
     private OrderService orderService;
 
@@ -58,7 +61,7 @@ class OrderServiceTest {
     }
 
     @Test
-    @DisplayName("checkout: Success scenario")
+    @DisplayName("checkout: Success scenario (No PromoCode)")
     void checkout_Success() {
         CartItem cartItem = new CartItem();
         cartItem.setBook(mockBook);
@@ -77,7 +80,7 @@ class OrderServiceTest {
             return order;
         });
 
-        OrderDTO result = orderService.checkout(EMAIL);
+        OrderDTO result = orderService.checkout(EMAIL, null);
 
         assertThat(result.totalAmount()).isEqualByComparingTo("200.00");
         assertThat(result.status()).isEqualTo(OrderStatus.PAID);
@@ -102,7 +105,7 @@ class OrderServiceTest {
     void checkout_CartNotFound() {
         when(cartRepository.findByUserEmail(EMAIL)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> orderService.checkout(EMAIL))
+        assertThatThrownBy(() -> orderService.checkout(EMAIL, null))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Cart not found");
     }
@@ -112,10 +115,11 @@ class OrderServiceTest {
     void checkout_CartEmpty() {
         Cart cart = new Cart();
         cart.setCartItems(Collections.emptyList());
+        cart.setUser(mockAccount);
 
         when(cartRepository.findByUserEmail(EMAIL)).thenReturn(Optional.of(cart));
 
-        assertThatThrownBy(() -> orderService.checkout(EMAIL))
+        assertThatThrownBy(() -> orderService.checkout(EMAIL, null))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Cart is empty");
     }
@@ -135,7 +139,7 @@ class OrderServiceTest {
 
         when(cartRepository.findByUserEmail(EMAIL)).thenReturn(Optional.of(cart));
 
-        assertThatThrownBy(() -> orderService.checkout(EMAIL))
+        assertThatThrownBy(() -> orderService.checkout(EMAIL, null))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Out of stock");
 
@@ -158,7 +162,7 @@ class OrderServiceTest {
 
         when(cartRepository.findByUserEmail(EMAIL)).thenReturn(Optional.of(cart));
 
-        assertThatThrownBy(() -> orderService.checkout(EMAIL))
+        assertThatThrownBy(() -> orderService.checkout(EMAIL, null))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Insufficient funds.");
 
@@ -167,9 +171,9 @@ class OrderServiceTest {
     }
 
     @Test
-    @DisplayName("buyNow: Success scenario")
+    @DisplayName("buyNow: Success scenario (No PromoCode)")
     void buyNow_Success() {
-        BuyNowRequestDTO request = new BuyNowRequestDTO(10L, 3);
+        BuyNowRequestDTO request = new BuyNowRequestDTO(10L, 3, null);
 
         when(accountRepository.findByEmail(EMAIL)).thenReturn(Optional.of(mockAccount));
         when(bookRepository.findById(10L)).thenReturn(Optional.of(mockBook));
@@ -198,7 +202,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("buyNow: Fail - Book Not Found")
     void buyNow_BookNotFound() {
-        BuyNowRequestDTO request = new BuyNowRequestDTO(999L, 1);
+        BuyNowRequestDTO request = new BuyNowRequestDTO(999L, 1, null);
 
         when(accountRepository.findByEmail(EMAIL)).thenReturn(Optional.of(mockAccount));
         when(bookRepository.findById(999L)).thenReturn(Optional.empty());
@@ -212,7 +216,7 @@ class OrderServiceTest {
     @DisplayName("buyNow: Fail - Out Of Stock")
     void buyNow_OutOfStock() {
         mockBook.setStockQuantity(2);
-        BuyNowRequestDTO request = new BuyNowRequestDTO(10L, 5);
+        BuyNowRequestDTO request = new BuyNowRequestDTO(10L, 5, null);
 
         when(accountRepository.findByEmail(EMAIL)).thenReturn(Optional.of(mockAccount));
         when(bookRepository.findById(10L)).thenReturn(Optional.of(mockBook));
@@ -228,7 +232,7 @@ class OrderServiceTest {
     @DisplayName("buyNow: Fail - Insufficient Funds")
     void buyNow_InsufficientFunds() {
         mockAccount.setBalance(BigDecimal.ZERO);
-        BuyNowRequestDTO request = new BuyNowRequestDTO(10L, 1);
+        BuyNowRequestDTO request = new BuyNowRequestDTO(10L, 1, null);
 
         when(accountRepository.findByEmail(EMAIL)).thenReturn(Optional.of(mockAccount));
         when(bookRepository.findById(10L)).thenReturn(Optional.of(mockBook));

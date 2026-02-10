@@ -1,5 +1,6 @@
 package com.softserve.bookstoreapi.service;
 
+import com.softserve.bookstoreapi.dto.AuthorDTO;
 import com.softserve.bookstoreapi.dto.BookDTO;
 import com.softserve.bookstoreapi.mapper.BookMapper;
 import com.softserve.bookstoreapi.model.*;
@@ -8,9 +9,11 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
-
 import org.springframework.data.domain.Pageable;
+
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,8 +29,44 @@ public class BookService {
 
     @Transactional
     public Book createBook(BookDTO request) {
+        Language language = languageRepository.findByCodeIgnoreCase(request.languageCode())
+                .orElseThrow(() -> new RuntimeException("Language not found: " + request.languageCode()));
+
+        List<Book> existingBooks = bookRepository.findByTitleIgnoreCaseAndPublishedYearAndLanguage(
+                request.title(),
+                request.publishedYear(),
+                language
+        );
+
+        for (Book existingBook : existingBooks) {
+            if (areAuthorsEqual(existingBook.getAuthors(), request.authors())) {
+                int newStock = existingBook.getStockQuantity() + request.stockQuantity();
+                existingBook.setStockQuantity(newStock);
+
+                return bookRepository.save(existingBook);
+            }
+        }
         Book book = new Book();
         return bookRepository.save(fillBookData(book, request));
+    }
+
+
+    private boolean areAuthorsEqual(List<Author> entities, List<AuthorDTO> dtos) {
+        if (entities.size() != dtos.size()) {
+            return false;
+        }
+        Set<String> entityNames = entities.stream()
+                .map(a -> (a.getFirstName() + " " + a.getLastName()).toLowerCase().trim())
+                .collect(Collectors.toSet());
+
+        for (AuthorDTO dto : dtos) {
+            String dtoName = (dto.firstName() + " " + dto.lastName()).toLowerCase().trim();
+
+            if (!entityNames.contains(dtoName)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Transactional
@@ -45,6 +84,7 @@ public class BookService {
         }
         bookRepository.deleteById(id);
     }
+
     public List<Book> getBooks() {
         return bookRepository.findAll();
     }
@@ -54,32 +94,27 @@ public class BookService {
         if (title != null) title = title.trim();
         Page<Book> books;
 
-        // 1 title is empty --> findByGenre
         if ((title == null || title.isBlank()) && genreName != null && !genreName.isBlank()) {
             Genre genre = genreRepository.findByNameIgnoreCase(genreName).orElse(null);
             if (genre == null) return Page.empty(pageable);
             books = bookRepository.findByGenreId(genre.getId(), pageable);
         }
-        // 2 genre is empty, FindByTittle
         else if ((genreName == null || genreName.isBlank()) && title != null && !title.isBlank()) {
             books = bookRepository.findByTitleContainingIgnoreCase(title, pageable);
         }
-        // 3. both is not empty
         else if (title != null && !title.isBlank() && genreName != null && !genreName.isBlank()) {
             Genre genre = genreRepository.findByNameIgnoreCase(genreName).orElse(null);
             if (genre == null) return Page.empty(pageable);
 
             books = bookRepository.findByTitleContainingIgnoreCaseAndGenreId(title, genre.getId(), pageable);
-
-            // If a name match is found, but the genre does not match → blank page
             if (books.isEmpty()) return Page.empty(pageable);
         }
-        // 4 tittle = empty genre = empty
         else {
             books = bookRepository.findAll(pageable);
         }
         return books.map(bookMapper::toDto);
     }
+
     private Book fillBookData(Book book, BookDTO request) {
         Genre genre = genreRepository.findByNameIgnoreCase(request.genre())
                 .orElseThrow(() -> new RuntimeException("Genre not found: " + request.genre()));
