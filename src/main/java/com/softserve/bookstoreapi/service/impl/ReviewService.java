@@ -10,6 +10,8 @@ import com.softserve.bookstoreapi.repository.BookRepository;
 import com.softserve.bookstoreapi.repository.OrderRepository;
 import com.softserve.bookstoreapi.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.softserve.bookstoreapi.model.enums.UserRole;
@@ -67,6 +69,14 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         return mapToDto(savedReview);
+    }
+    @Transactional(readOnly = true)
+    public Page<ReviewResponseDTO> getReviewsByBook(Long bookId, Pageable pageable) {
+        if (!bookRepository.existsById(bookId)) {
+            throw new RuntimeException("Book not found with id: " + bookId);
+        }
+        return reviewRepository.findAllByBookId(bookId, pageable)
+                .map(this::mapToDto);
     }
 
     private ReviewResponseDTO mapToDto(Review review) {
