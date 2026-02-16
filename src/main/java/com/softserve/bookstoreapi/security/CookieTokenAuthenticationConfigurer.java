@@ -10,8 +10,8 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
-public class BearerTokenAuthenticationConfigurer
-        extends AbstractHttpConfigurer<BearerTokenAuthenticationConfigurer, HttpSecurity> {
+public class CookieTokenAuthenticationConfigurer
+        extends AbstractHttpConfigurer<CookieTokenAuthenticationConfigurer, HttpSecurity> {
 
     private DeactivatedTokenRepository deactivatedTokenRepository;
     private TokenDeserializer tokenDeserializer;
@@ -31,7 +31,7 @@ public class BearerTokenAuthenticationConfigurer
 
         var bearerAuthenticationFilter = new AuthenticationFilter(
                 authenticationManager,
-                new BearerTokenAuthenticationConverter(this.tokenDeserializer)
+                new CookieTokenAuthenticationConverter(this.tokenDeserializer)
         );
 
         bearerAuthenticationFilter.setRequestMatcher(requestMatcher);
@@ -42,19 +42,19 @@ public class BearerTokenAuthenticationConfigurer
                 .authenticationProvider(authenticationProvider);
     }
 
-    public BearerTokenAuthenticationConfigurer tokenDeserializer(
+    public CookieTokenAuthenticationConfigurer tokenDeserializer(
             TokenDeserializer tokenDeserializer) {
         this.tokenDeserializer = tokenDeserializer;
         return this;
     }
 
-    public BearerTokenAuthenticationConfigurer deactivatedTokenRepository(
+    public CookieTokenAuthenticationConfigurer deactivatedTokenRepository(
             DeactivatedTokenRepository deactivatedTokenRepository) {
         this.deactivatedTokenRepository = deactivatedTokenRepository;
         return this;
     }
 
-    public BearerTokenAuthenticationConfigurer requestMatcher(RequestMatcher requestMatcher) {
+    public CookieTokenAuthenticationConfigurer requestMatcher(RequestMatcher requestMatcher) {
         this.requestMatcher = requestMatcher;
         return this;
     }

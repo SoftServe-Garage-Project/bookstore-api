@@ -4,8 +4,6 @@ import java.util.List;
 
 public record LoginResponseDTO(
         String email,
-        List<String> roles,
-        String accessToken,
-        String refreshToken
+        List<String> roles
 ) {
 }

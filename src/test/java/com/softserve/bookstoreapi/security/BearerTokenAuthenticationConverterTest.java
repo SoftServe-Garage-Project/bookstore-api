@@ -1,5 +1,6 @@
 package com.softserve.bookstoreapi.security;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,12 +26,12 @@ class BearerTokenAuthenticationConverterTest {
     @Mock
     private HttpServletRequest request;
 
-    private BearerTokenAuthenticationConverter converter;
+    private CookieTokenAuthenticationConverter converter;
     private Token validToken;
 
     @BeforeEach
     void setUp() {
-        converter = new BearerTokenAuthenticationConverter(tokenDeserializer);
+        converter = new CookieTokenAuthenticationConverter(tokenDeserializer);
 
         validToken = new Token(
                 UUID.randomUUID(),
@@ -42,10 +43,12 @@ class BearerTokenAuthenticationConverterTest {
     }
 
     @Test
-    void convert_ValidBearerToken_ReturnsAuthentication() {
+    void convert_ValidAccessTokenCookie_ReturnsAuthentication() {
         String tokenValue = "validJwtToken";
-        String authHeader = "Bearer " + tokenValue;
-        when(request.getHeader("Authorization")).thenReturn(authHeader);
+        Cookie accessTokenCookie = new Cookie("accessToken", tokenValue);
+        Cookie[] cookies = {accessTokenCookie};
+
+        when(request.getCookies()).thenReturn(cookies);
         when(tokenDeserializer.deserialize(tokenValue)).thenReturn(validToken);
 
         Authentication result = converter.convert(request);
@@ -57,8 +60,8 @@ class BearerTokenAuthenticationConverterTest {
     }
 
     @Test
-    void convert_NoAuthorizationHeader_ReturnsNull() {
-        when(request.getHeader("Authorization")).thenReturn(null);
+    void convert_NoCookies_ReturnsNull() {
+        when(request.getCookies()).thenReturn(null);
 
         Authentication result = converter.convert(request);
 
@@ -66,8 +69,11 @@ class BearerTokenAuthenticationConverterTest {
     }
 
     @Test
-    void convert_NoBearerPrefix_ReturnsNull() {
-        when(request.getHeader("Authorization")).thenReturn("Basic sometoken");
+    void convert_NoAccessTokenCookie_ReturnsNull() {
+        Cookie otherCookie = new Cookie("otherCookie", "somevalue");
+        Cookie[] cookies = {otherCookie};
+
+        when(request.getCookies()).thenReturn(cookies);
 
         Authentication result = converter.convert(request);
 
@@ -75,17 +81,11 @@ class BearerTokenAuthenticationConverterTest {
     }
 
     @Test
-    void convert_EmptyToken_ReturnsNull() {
-        when(request.getHeader("Authorization")).thenReturn("Bearer ");
+    void convert_EmptyTokenValue_ReturnsNull() {
+        Cookie accessTokenCookie = new Cookie("accessToken", "");
+        Cookie[] cookies = {accessTokenCookie};
 
-        Authentication result = converter.convert(request);
-
-        assertThat(result).isNull();
-    }
-
-    @Test
-    void convert_WhitespaceToken_ReturnsNull() {
-        when(request.getHeader("Authorization")).thenReturn("Bearer    ");
+        when(request.getCookies()).thenReturn(cookies);
 
         Authentication result = converter.convert(request);
 
@@ -95,8 +95,10 @@ class BearerTokenAuthenticationConverterTest {
     @Test
     void convert_InvalidToken_ReturnsNull() {
         String tokenValue = "invalidToken";
-        String authHeader = "Bearer " + tokenValue;
-        when(request.getHeader("Authorization")).thenReturn(authHeader);
+        Cookie accessTokenCookie = new Cookie("accessToken", tokenValue);
+        Cookie[] cookies = {accessTokenCookie};
+
+        when(request.getCookies()).thenReturn(cookies);
         when(tokenDeserializer.deserialize(tokenValue)).thenThrow(new RuntimeException("Invalid token"));
 
         Authentication result = converter.convert(request);
@@ -105,10 +107,12 @@ class BearerTokenAuthenticationConverterTest {
     }
 
     @Test
-    void convert_DeserializationReturnsNull_ReturnsNull() {
+    void convert_DeserializerReturnsNull_ReturnsNull() {
         String tokenValue = "someToken";
-        String authHeader = "Bearer " + tokenValue;
-        when(request.getHeader("Authorization")).thenReturn(authHeader);
+        Cookie accessTokenCookie = new Cookie("accessToken", tokenValue);
+        Cookie[] cookies = {accessTokenCookie};
+
+        when(request.getCookies()).thenReturn(cookies);
         when(tokenDeserializer.deserialize(tokenValue)).thenReturn(null);
 
         Authentication result = converter.convert(request);
@@ -117,15 +121,20 @@ class BearerTokenAuthenticationConverterTest {
     }
 
     @Test
-    void convert_TokenWithWhitespace_ReturnsAuthentication() {
+    void convert_MultipleIncludingAccessToken_ReturnsAuthentication() {
         String tokenValue = "validJwtToken";
-        String authHeader = "Bearer   " + tokenValue + "   ";
-        when(request.getHeader("Authorization")).thenReturn(authHeader);
+        Cookie cookie1 = new Cookie("sessionId", "xyz123");
+        Cookie accessTokenCookie = new Cookie("accessToken", tokenValue);
+        Cookie cookie2 = new Cookie("preferences", "theme=dark");
+        Cookie[] cookies = {cookie1, accessTokenCookie, cookie2};
+
+        when(request.getCookies()).thenReturn(cookies);
         when(tokenDeserializer.deserialize(tokenValue)).thenReturn(validToken);
 
         Authentication result = converter.convert(request);
 
         assertThat(result).isNotNull();
+        assertThat(result).isInstanceOf(PreAuthenticatedAuthenticationToken.class);
         assertThat(result.getPrincipal()).isEqualTo(validToken);
     }
 }

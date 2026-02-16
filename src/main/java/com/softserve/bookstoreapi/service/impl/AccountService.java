@@ -11,8 +11,10 @@ import com.softserve.bookstoreapi.repository.AccountRepository;
 import com.softserve.bookstoreapi.security.Token;
 import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -38,6 +40,19 @@ public class AccountService {
     private final TokenSerializer tokenSerializer;
     private final RefreshTokenService refreshTokenService;
 
+    @Getter
+    public static class LoginResult {
+        private final LoginResponseDTO responseDTO;
+        private final String accessToken;
+        private final String refreshToken;
+
+        public LoginResult(LoginResponseDTO responseDTO, String accessToken, String refreshToken) {
+            this.responseDTO = responseDTO;
+            this.accessToken = accessToken;
+            this.refreshToken = refreshToken;
+        }
+    }
+
     public Optional<Account> findByEmail(String email) {
         return accountRepository.findByEmail(email);
     }
@@ -46,7 +61,7 @@ public class AccountService {
         return accountRepository.existsByEmail(email);
     }
 
-    public LoginResponseDTO login(LoginRequestDTO loginRequest) {
+    public LoginResult login(LoginRequestDTO loginRequest) {
         log.debug("Login attempt for user: {}", obfuscate(loginRequest.email()));
 
         Authentication authentication = authenticationManager.authenticate(
@@ -66,20 +81,20 @@ public class AccountService {
         
         refreshTokenService.saveRefreshToken(refreshToken);
 
-        return buildLoginResponse(authentication, accessTokenString, refreshTokenString);
+        LoginResponseDTO responseDTO = buildLoginResponse(authentication);
+
+        return new LoginResult(responseDTO, accessTokenString, refreshTokenString);
     }
 
 
-    private LoginResponseDTO buildLoginResponse(Authentication authentication, String accessToken, String refreshToken) {
+    private LoginResponseDTO buildLoginResponse(Authentication authentication) {
         List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
         return new LoginResponseDTO(
                 authentication.getName(),
-                roles,
-                accessToken,
-                refreshToken
+                roles
         );
     }
 
@@ -124,9 +139,20 @@ public class AccountService {
         log.info("Password changed for user: {}", obfuscate(email));
     }
 
+    @Transactional(readOnly = true)
+    public Account getAccountByEmail(String email) {
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new com.softserve.bookstoreapi.exception.AccountNotFoundException("Account not found for email: " + email));
+
+        // Force initialization of lazy-loaded permissions collection within transaction
+        Hibernate.initialize(account.getPermissions());
+
+        return account;
+    }
+
     @Transactional
     public Account findOrCreateOAuth2Account(String email, String name) {
-        return accountRepository.findByEmail(email)
+        Account account = accountRepository.findByEmail(email)
                 .orElseGet(() -> {
                     Account newAccount = new Account();
                     String username = name != null ? name : (email != null ? email.split("@")[0] : "user");
@@ -140,5 +166,10 @@ public class AccountService {
                     log.info("Created new OAuth2 account for email: {}", obfuscate(email));
                     return savedAccount;
                 });
+
+        // Force initialization of lazy-loaded permissions collection within transaction
+        Hibernate.initialize(account.getPermissions());
+
+        return account;
     }
 }

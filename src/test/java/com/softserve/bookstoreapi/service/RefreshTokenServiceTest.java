@@ -1,7 +1,5 @@
 package com.softserve.bookstoreapi.service;
 
-import com.softserve.bookstoreapi.dto.RefreshRequestDTO;
-import com.softserve.bookstoreapi.dto.RefreshResponseDTO;
 import com.softserve.bookstoreapi.exception.AccountNotFoundException;
 import com.softserve.bookstoreapi.exception.InvalidJwtToken;
 import com.softserve.bookstoreapi.exception.RefreshTokenExpiredException;
@@ -17,6 +15,8 @@ import com.softserve.bookstoreapi.security.TokenDeserializer;
 import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
 import com.softserve.bookstoreapi.service.impl.RefreshTokenService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,6 +55,9 @@ class RefreshTokenServiceTest {
 
     @Mock
     private TokenSerializer tokenSerializer;
+
+    @Mock
+    private HttpServletRequest request;
 
     @InjectMocks
     private RefreshTokenService refreshTokenService;
@@ -126,7 +129,9 @@ class RefreshTokenServiceTest {
 
     @Test
     void refreshTokens_ValidToken_ReturnsNewTokens() {
-        RefreshRequestDTO request = new RefreshRequestDTO("validRefreshToken");
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "validRefreshToken");
+        Cookie[] cookies = {refreshTokenCookie};
+
         Token newAccessToken = new Token(
                 UUID.randomUUID(),
                 "test@example.com",
@@ -142,6 +147,7 @@ class RefreshTokenServiceTest {
                 Instant.now().plusSeconds(604800)
         );
 
+        when(request.getCookies()).thenReturn(cookies);
         when(tokenDeserializer.deserialize("validRefreshToken")).thenReturn(validToken);
         when(refreshTokenRepository.findById(tokenId)).thenReturn(Optional.of(storedRefreshToken));
         when(accountRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testAccount));
@@ -151,11 +157,13 @@ class RefreshTokenServiceTest {
         when(tokenSerializer.serialize(newRefreshToken)).thenReturn("newRefreshToken");
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(storedRefreshToken);
 
-        RefreshResponseDTO result = refreshTokenService.refreshTokens(request);
+        RefreshTokenService.RefreshResult result = refreshTokenService.refreshTokens(request);
 
         assertThat(result).isNotNull();
-        assertThat(result.accessToken()).isEqualTo("newAccessToken");
-        assertThat(result.refreshToken()).isEqualTo("newRefreshToken");
+        assertThat(result.getResponseDTO()).isNotNull();
+        assertThat(result.getResponseDTO().message()).isEqualTo("Tokens refreshed successfully");
+        assertThat(result.getAccessToken()).isEqualTo("newAccessToken");
+        assertThat(result.getRefreshToken()).isEqualTo("newRefreshToken");
 
         verify(tokenDeserializer).deserialize("validRefreshToken");
         verify(refreshTokenRepository, times(2)).findById(tokenId); // Called twice: findByTokenId() and markAsUsed()
@@ -165,8 +173,36 @@ class RefreshTokenServiceTest {
     }
 
     @Test
+    void refreshTokens_NoCookies_ThrowsException() {
+        when(request.getCookies()).thenReturn(null);
+
+        assertThatThrownBy(() -> refreshTokenService.refreshTokens(request))
+                .isInstanceOf(InvalidJwtToken.class)
+                .hasMessageContaining("Refresh token not found in cookies");
+
+        verify(tokenDeserializer, never()).deserialize(any());
+    }
+
+    @Test
+    void refreshTokens_NoRefreshTokenCookie_ThrowsException() {
+        Cookie otherCookie = new Cookie("someCookie", "value");
+        Cookie[] cookies = {otherCookie};
+
+        when(request.getCookies()).thenReturn(cookies);
+
+        assertThatThrownBy(() -> refreshTokenService.refreshTokens(request))
+                .isInstanceOf(InvalidJwtToken.class)
+                .hasMessageContaining("Refresh token not found in cookies");
+
+        verify(tokenDeserializer, never()).deserialize(any());
+    }
+
+    @Test
     void refreshTokens_InvalidToken_ThrowsException() {
-        RefreshRequestDTO request = new RefreshRequestDTO("invalidToken");
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "invalidToken");
+        Cookie[] cookies = {refreshTokenCookie};
+
+        when(request.getCookies()).thenReturn(cookies);
         when(tokenDeserializer.deserialize("invalidToken")).thenThrow(new RuntimeException("Malformed JWT"));
 
         assertThatThrownBy(() -> refreshTokenService.refreshTokens(request))
@@ -179,7 +215,9 @@ class RefreshTokenServiceTest {
 
     @Test
     void refreshTokens_ExpiredToken_ThrowsException() {
-        RefreshRequestDTO request = new RefreshRequestDTO("expiredToken");
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "expiredToken");
+        Cookie[] cookies = {refreshTokenCookie};
+
         RefreshToken expiredToken = RefreshToken.builder()
                 .tokenId(tokenId)
                 .userEmail("test@example.com")
@@ -189,6 +227,7 @@ class RefreshTokenServiceTest {
                 .revoked(false)
                 .build();
 
+        when(request.getCookies()).thenReturn(cookies);
         when(tokenDeserializer.deserialize("expiredToken")).thenReturn(validToken);
         when(refreshTokenRepository.findById(tokenId)).thenReturn(Optional.of(expiredToken));
 
@@ -203,9 +242,12 @@ class RefreshTokenServiceTest {
 
     @Test
     void refreshTokens_UsedToken_ThrowsException() {
-        RefreshRequestDTO request = new RefreshRequestDTO("usedToken");
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "usedToken");
+        Cookie[] cookies = {refreshTokenCookie};
+
         storedRefreshToken.setUsed(true);
 
+        when(request.getCookies()).thenReturn(cookies);
         when(tokenDeserializer.deserialize("usedToken")).thenReturn(validToken);
         when(refreshTokenRepository.findById(tokenId)).thenReturn(Optional.of(storedRefreshToken));
 
@@ -219,9 +261,12 @@ class RefreshTokenServiceTest {
 
     @Test
     void refreshTokens_RevokedToken_ThrowsException() {
-        RefreshRequestDTO request = new RefreshRequestDTO("revokedToken");
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "revokedToken");
+        Cookie[] cookies = {refreshTokenCookie};
+
         storedRefreshToken.setRevoked(true);
 
+        when(request.getCookies()).thenReturn(cookies);
         when(tokenDeserializer.deserialize("revokedToken")).thenReturn(validToken);
         when(refreshTokenRepository.findById(tokenId)).thenReturn(Optional.of(storedRefreshToken));
 
@@ -235,8 +280,10 @@ class RefreshTokenServiceTest {
 
     @Test
     void refreshTokens_UserNotFound_ThrowsException() {
-        RefreshRequestDTO request = new RefreshRequestDTO("validToken");
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "validToken");
+        Cookie[] cookies = {refreshTokenCookie};
 
+        when(request.getCookies()).thenReturn(cookies);
         when(tokenDeserializer.deserialize("validToken")).thenReturn(validToken);
         when(refreshTokenRepository.findById(tokenId)).thenReturn(Optional.of(storedRefreshToken));
         when(accountRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());

@@ -16,10 +16,10 @@ public class OAuth2FailureHandler implements AuthenticationFailureHandler {
                                         HttpServletResponse response,
                                         AuthenticationException exception) throws IOException {
 
-        log.info("OAuth2 authentication failed. Reason: {} ({})",
+        log.error("OAuth2 authentication failed. Reason: {} ({})",
                 exception.getMessage(),
                 exception.getClass().getSimpleName());
 
-        response.sendRedirect("/login?status=error_oauth2_failure");
+        response.sendRedirect("https://localhost:3000/login?error=oauth2_failed");
     }
 }

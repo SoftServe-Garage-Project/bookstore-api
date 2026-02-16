@@ -8,7 +8,7 @@ import com.nimbusds.jose.crypto.DirectDecrypter;
 import com.nimbusds.jose.crypto.DirectEncrypter;
 import com.nimbusds.jose.jwk.OctetSequenceKey;
 import com.softserve.bookstoreapi.repository.DeactivatedTokenRepository;
-import com.softserve.bookstoreapi.security.BearerTokenAuthenticationConfigurer;
+import com.softserve.bookstoreapi.security.CookieTokenAuthenticationConfigurer;
 import com.softserve.bookstoreapi.security.TokenDeserializer;
 import com.softserve.bookstoreapi.security.TokenFactory;
 import com.softserve.bookstoreapi.security.TokenSerializer;
@@ -49,7 +49,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, PublicUrlConfig publicUrlConfig,
-                                                   BearerTokenAuthenticationConfigurer bearerTokenAuthenticationConfigurer,
+                                                   CookieTokenAuthenticationConfigurer bearerTokenAuthenticationConfigurer,
                                                    OAuth2SuccessHandler oAuth2SuccessHandler,
                                                    OAuth2FailureHandler oAuth2FailureHandler) throws Exception {
         http
@@ -118,19 +118,20 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             UserDetailsService userDetailsService,
             BCryptPasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(passwordEncoder);
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
+        authenticationProvider.setPasswordEncoder(passwordEncoder);
         authenticationProvider.setUserDetailsService(userDetailsService);
 
         return new ProviderManager(authenticationProvider);
     }
 
     @Bean
-    public BearerTokenAuthenticationConfigurer bearerTokenAuthenticationConfigurer(
+    public CookieTokenAuthenticationConfigurer bearerTokenAuthenticationConfigurer(
             TokenDeserializer deserializer,
             DeactivatedTokenRepository deactivatedTokenRepository,
             PublicUrlConfig publicUrlConfig) {
 
-        return new BearerTokenAuthenticationConfigurer()
+        return new CookieTokenAuthenticationConfigurer()
                 .tokenDeserializer(deserializer)
                 .deactivatedTokenRepository(deactivatedTokenRepository)
                 .requestMatcher(new NegatedRequestMatcher(publicUrlConfig.getRequestMatcher()));
@@ -149,9 +150,8 @@ public class SecurityConfig {
             AccountService accountService,
             TokenFactory tokenFactory,
             TokenSerializer tokenSerializer,
-            RefreshTokenService refreshTokenService,
-            ObjectMapper objectMapper) {
-        return new OAuth2SuccessHandler(accountService, tokenFactory, tokenSerializer, refreshTokenService, objectMapper);
+            RefreshTokenService refreshTokenService) {
+        return new OAuth2SuccessHandler(accountService, tokenFactory, tokenSerializer, refreshTokenService);
     }
 
     @Bean

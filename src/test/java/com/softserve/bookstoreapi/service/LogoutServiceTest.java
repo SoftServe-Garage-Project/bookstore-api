@@ -1,10 +1,11 @@
 package com.softserve.bookstoreapi.service;
 
-import com.softserve.bookstoreapi.dto.LogoutRequestDTO;
 import com.softserve.bookstoreapi.exception.InvalidJwtToken;
 import com.softserve.bookstoreapi.service.impl.LogoutService;
 import com.softserve.bookstoreapi.service.impl.RefreshTokenService;
 import com.softserve.bookstoreapi.service.impl.TokenDeactivationService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,12 +24,19 @@ class LogoutServiceTest {
     @Mock
     private RefreshTokenService refreshTokenService;
 
+    @Mock
+    private HttpServletRequest request;
+
     @InjectMocks
     private LogoutService logoutService;
 
     @Test
-    void logout_ValidTokens_DeactivatesSuccessfully() {
-        LogoutRequestDTO request = new LogoutRequestDTO("validAccessToken", "validRefreshToken");
+    void logout_ValidTokensInCookies_DeactivatesSuccessfully() {
+        Cookie accessTokenCookie = new Cookie("accessToken", "validAccessToken");
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "validRefreshToken");
+        Cookie[] cookies = {accessTokenCookie, refreshTokenCookie};
+
+        when(request.getCookies()).thenReturn(cookies);
         doNothing().when(tokenDeactivationService).deactivateAccessToken("validAccessToken");
         doNothing().when(refreshTokenService).revokeRefreshTokenByString("validRefreshToken");
 
@@ -40,7 +48,11 @@ class LogoutServiceTest {
 
     @Test
     void logout_InvalidAccessToken_HandlesGracefully() {
-        LogoutRequestDTO request = new LogoutRequestDTO("invalidAccessToken", "validRefreshToken");
+        Cookie accessTokenCookie = new Cookie("accessToken", "invalidAccessToken");
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "validRefreshToken");
+        Cookie[] cookies = {accessTokenCookie, refreshTokenCookie};
+
+        when(request.getCookies()).thenReturn(cookies);
         doThrow(new InvalidJwtToken("Invalid access token"))
                 .when(tokenDeactivationService).deactivateAccessToken("invalidAccessToken");
         doNothing().when(refreshTokenService).revokeRefreshTokenByString("validRefreshToken");
@@ -53,7 +65,11 @@ class LogoutServiceTest {
 
     @Test
     void logout_InvalidRefreshToken_HandlesGracefully() {
-        LogoutRequestDTO request = new LogoutRequestDTO("validAccessToken", "invalidRefreshToken");
+        Cookie accessTokenCookie = new Cookie("accessToken", "validAccessToken");
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "invalidRefreshToken");
+        Cookie[] cookies = {accessTokenCookie, refreshTokenCookie};
+
+        when(request.getCookies()).thenReturn(cookies);
         doNothing().when(tokenDeactivationService).deactivateAccessToken("validAccessToken");
         doThrow(new InvalidJwtToken("Invalid refresh token"))
                 .when(refreshTokenService).revokeRefreshTokenByString("invalidRefreshToken");
@@ -66,7 +82,11 @@ class LogoutServiceTest {
 
     @Test
     void logout_BothTokensInvalid_HandlesGracefully() {
-        LogoutRequestDTO request = new LogoutRequestDTO("invalidAccessToken", "invalidRefreshToken");
+        Cookie accessTokenCookie = new Cookie("accessToken", "invalidAccessToken");
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "invalidRefreshToken");
+        Cookie[] cookies = {accessTokenCookie, refreshTokenCookie};
+
+        when(request.getCookies()).thenReturn(cookies);
         doThrow(new InvalidJwtToken("Invalid access token"))
                 .when(tokenDeactivationService).deactivateAccessToken("invalidAccessToken");
         doThrow(new InvalidJwtToken("Invalid refresh token"))
@@ -76,6 +96,30 @@ class LogoutServiceTest {
 
         verify(tokenDeactivationService).deactivateAccessToken("invalidAccessToken");
         verify(refreshTokenService).revokeRefreshTokenByString("invalidRefreshToken");
+    }
+
+    @Test
+    void logout_NoCookies_HandlesGracefully() {
+        when(request.getCookies()).thenReturn(null);
+
+        assertDoesNotThrow(() -> logoutService.logout(request));
+
+        verify(tokenDeactivationService, never()).deactivateAccessToken(anyString());
+        verify(refreshTokenService, never()).revokeRefreshTokenByString(anyString());
+    }
+
+    @Test
+    void logout_OnlyAccessTokenCookie_HandlesGracefully() {
+        Cookie accessTokenCookie = new Cookie("accessToken", "validAccessToken");
+        Cookie[] cookies = {accessTokenCookie};
+
+        when(request.getCookies()).thenReturn(cookies);
+        doNothing().when(tokenDeactivationService).deactivateAccessToken("validAccessToken");
+
+        assertDoesNotThrow(() -> logoutService.logout(request));
+
+        verify(tokenDeactivationService).deactivateAccessToken("validAccessToken");
+        verify(refreshTokenService, never()).revokeRefreshTokenByString(anyString());
     }
 }
 

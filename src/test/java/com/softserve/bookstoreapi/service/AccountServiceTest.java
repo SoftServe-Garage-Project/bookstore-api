@@ -1,7 +1,6 @@
 package com.softserve.bookstoreapi.service;
 
 import com.softserve.bookstoreapi.dto.LoginRequestDTO;
-import com.softserve.bookstoreapi.dto.LoginResponseDTO;
 import com.softserve.bookstoreapi.dto.UserRegisterRequestDTO;
 import com.softserve.bookstoreapi.dto.UserRegisterResponseDTO;
 import com.softserve.bookstoreapi.exception.AccountNotFoundException;
@@ -156,13 +155,14 @@ class AccountServiceTest {
         when(tokenSerializer.serialize(testRefreshToken)).thenReturn("refreshTokenString");
         doNothing().when(refreshTokenService).saveRefreshToken(testRefreshToken);
 
-        LoginResponseDTO result = accountService.login(validLoginRequest);
+        AccountService.LoginResult result = accountService.login(validLoginRequest);
 
         assertThat(result).isNotNull();
-        assertThat(result.email()).isEqualTo("test@example.com");
-        assertThat(result.accessToken()).isEqualTo("accessTokenString");
-        assertThat(result.refreshToken()).isEqualTo("refreshTokenString");
-        assertThat(result.roles()).contains("ROLE_CUSTOMER");
+        assertThat(result.getResponseDTO()).isNotNull();
+        assertThat(result.getResponseDTO().email()).isEqualTo("test@example.com");
+        assertThat(result.getResponseDTO().roles()).contains("ROLE_CUSTOMER");
+        assertThat(result.getAccessToken()).isEqualTo("accessTokenString");
+        assertThat(result.getRefreshToken()).isEqualTo("refreshTokenString");
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(tokenFactory).createAccessToken(authentication);
