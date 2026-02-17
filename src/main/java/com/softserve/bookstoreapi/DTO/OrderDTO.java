@@ -12,5 +12,7 @@ public record OrderDTO(
         OrderStatus status,
         PaymentMethod paymentMethod,
         LocalDateTime createdAt,
-        List<OrderItemDTO> items
+        List<OrderItemDTO> items,
+        String fullName,
+        String shippingAddress
 ) {}

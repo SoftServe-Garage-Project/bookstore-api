@@ -3,6 +3,7 @@ package com.softserve.bookstoreapi.controller;
 import com.softserve.bookstoreapi.dto.BuyNowRequestDTO;
 import com.softserve.bookstoreapi.dto.CheckoutRequestDTO;
 import com.softserve.bookstoreapi.dto.OrderDTO;
+import com.softserve.bookstoreapi.dto.OrderStatusUpdateDTO;
 import com.softserve.bookstoreapi.service.impl.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,10 +24,8 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/checkout")
-    public ResponseEntity<OrderDTO> checkout(
-            @RequestBody(required = false) CheckoutRequestDTO request, Principal principal) {
-        String code = (request != null) ? request.promoCode() : null;
-        OrderDTO order = orderService.checkout(principal.getName(), code);
+    public ResponseEntity<OrderDTO> checkout(@Valid @RequestBody CheckoutRequestDTO request, Principal principal) {
+        OrderDTO order = orderService.checkout(principal.getName(), request);
         return ResponseEntity.ok(order);
     }
     @PostMapping("/buy-now")
@@ -38,11 +37,14 @@ public class OrderController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Page<OrderDTO>> getMyOrders(
-            Principal principal,
-            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable
-    ) {
+    public ResponseEntity<Page<OrderDTO>> getMyOrders(Principal principal, @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
         Page<OrderDTO> orders = orderService.getUserOrders(principal.getName(), pageable);
         return ResponseEntity.ok(orders);
+    }
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<OrderDTO> updateOrderStatus(@PathVariable Long id, @Valid @RequestBody OrderStatusUpdateDTO request) {
+        OrderDTO updatedOrder = orderService.updateOrderStatus(id, request.status());
+        return ResponseEntity.ok(updatedOrder);
     }
 }

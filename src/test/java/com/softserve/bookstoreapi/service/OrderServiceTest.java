@@ -1,6 +1,7 @@
 package com.softserve.bookstoreapi.service;
 
 import com.softserve.bookstoreapi.dto.BuyNowRequestDTO;
+import com.softserve.bookstoreapi.dto.CheckoutRequestDTO;
 import com.softserve.bookstoreapi.dto.OrderDTO;
 import com.softserve.bookstoreapi.model.*;
 import com.softserve.bookstoreapi.model.enums.OrderStatus;
@@ -46,6 +47,9 @@ class OrderServiceTest {
     private Account mockAccount;
     private Book mockBook;
 
+    private final String FULL_NAME = "John Doe";
+    private final String ADDRESS = "123 Main St";
+
     @BeforeEach
     void setUp() {
         mockAccount = new Account();
@@ -77,15 +81,21 @@ class OrderServiceTest {
             Order order = inv.getArgument(0);
             order.setId(555L);
             order.setCreatedAt(java.time.LocalDateTime.now());
+            assertThat(order.getFullName()).isEqualTo(FULL_NAME);
+            assertThat(order.getShippingAddress()).isEqualTo(ADDRESS);
             return order;
         });
 
-        OrderDTO result = orderService.checkout(EMAIL, null);
+        CheckoutRequestDTO request = new CheckoutRequestDTO(null, FULL_NAME, ADDRESS);
+
+        OrderDTO result = orderService.checkout(EMAIL, request);
 
         assertThat(result.totalAmount()).isEqualByComparingTo("200.00");
         assertThat(result.status()).isEqualTo(OrderStatus.PAID);
         assertThat(result.paymentMethod()).isEqualTo(PaymentMethod.BALANCE);
         assertThat(result.items()).hasSize(1);
+
+        assertThat(result.fullName()).isEqualTo(FULL_NAME);
 
         assertThat(mockAccount.getBalance()).isEqualByComparingTo("800.00");
         verify(accountRepository).save(mockAccount);
@@ -105,7 +115,9 @@ class OrderServiceTest {
     void checkout_CartNotFound() {
         when(cartRepository.findByUserEmail(EMAIL)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> orderService.checkout(EMAIL, null))
+        CheckoutRequestDTO request = new CheckoutRequestDTO(null, FULL_NAME, ADDRESS);
+
+        assertThatThrownBy(() -> orderService.checkout(EMAIL, request))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Cart not found");
     }
@@ -119,7 +131,9 @@ class OrderServiceTest {
 
         when(cartRepository.findByUserEmail(EMAIL)).thenReturn(Optional.of(cart));
 
-        assertThatThrownBy(() -> orderService.checkout(EMAIL, null))
+        CheckoutRequestDTO request = new CheckoutRequestDTO(null, FULL_NAME, ADDRESS);
+
+        assertThatThrownBy(() -> orderService.checkout(EMAIL, request))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Cart is empty");
     }
@@ -139,7 +153,9 @@ class OrderServiceTest {
 
         when(cartRepository.findByUserEmail(EMAIL)).thenReturn(Optional.of(cart));
 
-        assertThatThrownBy(() -> orderService.checkout(EMAIL, null))
+        CheckoutRequestDTO request = new CheckoutRequestDTO(null, FULL_NAME, ADDRESS);
+
+        assertThatThrownBy(() -> orderService.checkout(EMAIL, request))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Out of stock");
 
@@ -162,7 +178,9 @@ class OrderServiceTest {
 
         when(cartRepository.findByUserEmail(EMAIL)).thenReturn(Optional.of(cart));
 
-        assertThatThrownBy(() -> orderService.checkout(EMAIL, null))
+        CheckoutRequestDTO request = new CheckoutRequestDTO(null, FULL_NAME, ADDRESS);
+
+        assertThatThrownBy(() -> orderService.checkout(EMAIL, request))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Insufficient funds.");
 
@@ -173,7 +191,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("buyNow: Success scenario (No PromoCode)")
     void buyNow_Success() {
-        BuyNowRequestDTO request = new BuyNowRequestDTO(10L, 3, null);
+        BuyNowRequestDTO request = new BuyNowRequestDTO(10L, 3, null, FULL_NAME, ADDRESS);
 
         when(accountRepository.findByEmail(EMAIL)).thenReturn(Optional.of(mockAccount));
         when(bookRepository.findById(10L)).thenReturn(Optional.of(mockBook));
@@ -189,6 +207,7 @@ class OrderServiceTest {
         assertThat(result.totalAmount()).isEqualByComparingTo("300.00");
         assertThat(result.items()).hasSize(1);
         assertThat(result.items().get(0).quantity()).isEqualTo(3);
+        assertThat(result.shippingAddress()).isEqualTo(ADDRESS);
 
         assertThat(mockAccount.getBalance()).isEqualByComparingTo("700.00");
         verify(accountRepository).save(mockAccount);
@@ -202,7 +221,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("buyNow: Fail - Book Not Found")
     void buyNow_BookNotFound() {
-        BuyNowRequestDTO request = new BuyNowRequestDTO(999L, 1, null);
+        BuyNowRequestDTO request = new BuyNowRequestDTO(999L, 1, null, FULL_NAME, ADDRESS);
 
         when(accountRepository.findByEmail(EMAIL)).thenReturn(Optional.of(mockAccount));
         when(bookRepository.findById(999L)).thenReturn(Optional.empty());
@@ -216,7 +235,7 @@ class OrderServiceTest {
     @DisplayName("buyNow: Fail - Out Of Stock")
     void buyNow_OutOfStock() {
         mockBook.setStockQuantity(2);
-        BuyNowRequestDTO request = new BuyNowRequestDTO(10L, 5, null);
+        BuyNowRequestDTO request = new BuyNowRequestDTO(10L, 5, null, FULL_NAME, ADDRESS);
 
         when(accountRepository.findByEmail(EMAIL)).thenReturn(Optional.of(mockAccount));
         when(bookRepository.findById(10L)).thenReturn(Optional.of(mockBook));
@@ -232,7 +251,7 @@ class OrderServiceTest {
     @DisplayName("buyNow: Fail - Insufficient Funds")
     void buyNow_InsufficientFunds() {
         mockAccount.setBalance(BigDecimal.ZERO);
-        BuyNowRequestDTO request = new BuyNowRequestDTO(10L, 1, null);
+        BuyNowRequestDTO request = new BuyNowRequestDTO(10L, 1, null, FULL_NAME, ADDRESS);
 
         when(accountRepository.findByEmail(EMAIL)).thenReturn(Optional.of(mockAccount));
         when(bookRepository.findById(10L)).thenReturn(Optional.of(mockBook));
