@@ -295,7 +295,13 @@ public class OrderService {
     public Page<OrderDTO> getUserOrders(String userEmail, Pageable pageable) {
         Account account = accountRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        Page<Order> orders = orderRepository.findByAccount(account, pageable);
+
+        Page<Order> orders;
+        if (account.getRole() == com.softserve.bookstoreapi.model.enums.UserRole.ROLE_ADMIN) {
+            orders = orderRepository.findAll(pageable);
+        } else {
+            orders = orderRepository.findByAccount(account, pageable);
+        }
 
         return orders.map(this::mapToDto);
     }
