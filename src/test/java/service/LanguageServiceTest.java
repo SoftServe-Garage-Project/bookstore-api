@@ -32,8 +32,7 @@ class LanguageServiceTest {
     @Test
     @DisplayName("saveLanguage: Should correctly map fields and return saved entity")
     void saveLanguage_Success() {
-
-        LanguageDTO dto = new LanguageDTO("FR", "French");
+        LanguageDTO dto = new LanguageDTO(null, "FR", "French");
 
         Language savedLang = new Language();
         savedLang.setId(1L);
@@ -58,7 +57,7 @@ class LanguageServiceTest {
     @Test
     @DisplayName("saveLanguage: Should throw DataIntegrityViolationException when duplicate exists")
     void saveLanguage_Duplicate_ThrowsException() {
-        LanguageDTO dto = new LanguageDTO("EN", "English");
+        LanguageDTO dto = new LanguageDTO(null, "EN", "English");
 
         when(languageRepository.save(any(Language.class)))
                 .thenThrow(new DataIntegrityViolationException("Duplicate key value violates unique constraint"));
@@ -82,7 +81,7 @@ class LanguageServiceTest {
     @Test
     @DisplayName("saveLanguage: Should propagate generic RuntimeException from repository")
     void saveLanguage_DbError_PropagatesException() {
-        LanguageDTO dto = new LanguageDTO("DE", "German");
+        LanguageDTO dto = new LanguageDTO(null, "DE", "German");
 
         when(languageRepository.save(any(Language.class)))
                 .thenThrow(new RuntimeException("Database unavailable"));

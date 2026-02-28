@@ -36,8 +36,9 @@ class GenreServiceTest {
     @Test
     @DisplayName("addGenre: Should successfully save and return the DTO")
     void addGenre_Success_ReturnsDto() {
-        GenreDTO inputDto = new GenreDTO("Fantasy", "Magic books");
-        GenreDTO expectedDto = new GenreDTO("Fantasy", "Magic books"); // То, что вернет маппер
+        GenreDTO inputDto = new GenreDTO(null, "Fantasy", "Magic books");
+        GenreDTO expectedDto = new GenreDTO(1L, "Fantasy", "Magic books");
+
         Genre savedGenre = new Genre();
         savedGenre.setId(1L);
         savedGenre.setName("Fantasy");
@@ -50,6 +51,7 @@ class GenreServiceTest {
         GenreDTO result = genreService.addGenre(inputDto);
 
         assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(1L);
         assertThat(result.name()).isEqualTo("Fantasy");
         assertThat(result.description()).isEqualTo("Magic books");
 
@@ -60,8 +62,8 @@ class GenreServiceTest {
     @Test
     @DisplayName("addGenre: Should correctly map DTO fields to Entity")
     void addGenre_Success_MappingCorrect() {
-        GenreDTO dto = new GenreDTO("Horror", "Scary books");
-        Genre savedGenre = new Genre(); // Пустая сущность для возврата репозиторием
+        GenreDTO dto = new GenreDTO(null, "Horror", "Scary books");
+        Genre savedGenre = new Genre();
 
         when(genreRepository.save(any(Genre.class))).thenReturn(savedGenre);
         when(genreMapper.toDto(any())).thenReturn(dto);
@@ -87,7 +89,7 @@ class GenreServiceTest {
     @Test
     @DisplayName("addGenre: Should propagate exception when Repository fails")
     void addGenre_RepositoryThrowsException() {
-        GenreDTO dto = new GenreDTO("Duplicate", "Desc");
+        GenreDTO dto = new GenreDTO(null, "Duplicate", "Desc");
 
         when(genreRepository.save(any(Genre.class)))
                 .thenThrow(new DataIntegrityViolationException("Duplicate name"));

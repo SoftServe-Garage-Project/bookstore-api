@@ -3,6 +3,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 public record LanguageDTO(
+        Long id,
         @NotBlank(message = "{validation.language.code.notblank}")
         String code,
 

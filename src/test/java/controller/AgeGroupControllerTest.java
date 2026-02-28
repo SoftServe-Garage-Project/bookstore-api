@@ -39,14 +39,24 @@ class AgeGroupControllerTest {
     @InjectMocks
     private AgeGroupController ageGroupController;
 
-    private AgeGroupDTO validDto;
+    private AgeGroupDTO requestDto;
+    private AgeGroupDTO responseDto;
     private AgeGroup savedEntity;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(ageGroupController).build();
 
-        validDto = new AgeGroupDTO(
+        requestDto = new AgeGroupDTO(
+                null,
+                "Teenagers",
+                "Group for 13-19 years old",
+                13,
+                19
+        );
+
+        responseDto = new AgeGroupDTO(
+                1L,
                 "Teenagers",
                 "Group for 13-19 years old",
                 13,
@@ -66,12 +76,13 @@ class AgeGroupControllerTest {
     void create_Success() throws Exception {
         when(ageGroupMapper.toEntity(any(AgeGroupDTO.class))).thenReturn(savedEntity);
         when(ageGroupService.save(any(AgeGroup.class))).thenReturn(savedEntity);
-        when(ageGroupMapper.toDto(any(AgeGroup.class))).thenReturn(validDto);
+        when(ageGroupMapper.toDto(any(AgeGroup.class))).thenReturn(responseDto);
 
         mockMvc.perform(post("/api/ageGroups")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validDto)))
+                        .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.name").value("Teenagers"))
                 .andExpect(jsonPath("$.description").value("Group for 13-19 years old"))
                 .andExpect(jsonPath("$.minAge").value(13))
@@ -82,6 +93,7 @@ class AgeGroupControllerTest {
     @DisplayName("Should return 400 if name is blank")
     void create_BlankName_Returns400() throws Exception {
         AgeGroupDTO invalidDto = new AgeGroupDTO(
+                null,
                 "",
                 "Description",
                 10,
@@ -98,6 +110,7 @@ class AgeGroupControllerTest {
     @DisplayName("Should return 400 if minAge is null")
     void create_NullMinAge_Returns400() throws Exception {
         AgeGroupDTO invalidDto = new AgeGroupDTO(
+                null,
                 "Kids",
                 "Description",
                 null,
@@ -114,6 +127,7 @@ class AgeGroupControllerTest {
     @DisplayName("Should return 400 if maxAge is invalid")
     void create_InvalidMaxAge_Returns400() throws Exception {
         AgeGroupDTO invalidDto = new AgeGroupDTO(
+                null,
                 "Seniors",
                 "Description",
                 30,

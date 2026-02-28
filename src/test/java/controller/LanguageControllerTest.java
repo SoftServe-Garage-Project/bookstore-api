@@ -39,14 +39,16 @@ class LanguageControllerTest {
     @InjectMocks
     private LanguageController languageController;
 
-    private LanguageDTO validDto;
+    private LanguageDTO requestDto;
+    private LanguageDTO responseDto;
     private Language savedEntity;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(languageController).build();
 
-        validDto = new LanguageDTO("UA", "Ukrainian");
+        requestDto = new LanguageDTO(null, "UA", "Ukrainian");
+        responseDto = new LanguageDTO(1L, "UA", "Ukrainian");
 
         savedEntity = new Language();
         savedEntity.setId(1L);
@@ -58,12 +60,13 @@ class LanguageControllerTest {
     @DisplayName("Should save Language successfully and return 200")
     void saveLanguage_Success() throws Exception {
         when(languageService.saveLanguage(any(LanguageDTO.class))).thenReturn(savedEntity);
-        when(languageMapper.toDto(any(Language.class))).thenReturn(validDto);
+        when(languageMapper.toDto(any(Language.class))).thenReturn(responseDto);
 
         mockMvc.perform(post("/api/languages")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validDto)))
+                        .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L)) // Перевіряємо, що ID теж повернувся
                 .andExpect(jsonPath("$.code").value("UA"))
                 .andExpect(jsonPath("$.name").value("Ukrainian"));
 
@@ -73,7 +76,7 @@ class LanguageControllerTest {
     @Test
     @DisplayName("Should return 400 Bad Request when code is missing")
     void saveLanguage_MissingCode_Returns400() throws Exception {
-        LanguageDTO invalidDto = new LanguageDTO("", "Ukrainian");
+        LanguageDTO invalidDto = new LanguageDTO(null, "", "Ukrainian");
 
         mockMvc.perform(post("/api/languages")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -84,7 +87,7 @@ class LanguageControllerTest {
     @Test
     @DisplayName("Should return 400 Bad Request when name is missing")
     void saveLanguage_MissingName_Returns400() throws Exception {
-        LanguageDTO invalidDto = new LanguageDTO("UA", null);
+        LanguageDTO invalidDto = new LanguageDTO(null, "UA", null);
 
         mockMvc.perform(post("/api/languages")
                         .contentType(MediaType.APPLICATION_JSON)
