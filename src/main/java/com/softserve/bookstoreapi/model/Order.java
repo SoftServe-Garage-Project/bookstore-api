@@ -49,4 +49,12 @@ public class Order extends SoftDeletableEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false, length = 20)
     private PaymentMethod paymentMethod;
+
+    @Column(nullable = false)
+    @NotNull
+    private String fullName;
+
+    @Column(nullable = false)
+    @NotNull
+    private String shippingAddress;
 }

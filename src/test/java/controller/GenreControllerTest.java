@@ -38,14 +38,16 @@ class GenreControllerTest {
     @InjectMocks
     private GenreController genreController;
 
-    private GenreDTO validDto;
+    private GenreDTO requestDto;
+    private GenreDTO responseDto;
     private Genre savedEntity;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(genreController).build();
 
-        validDto = new GenreDTO("Fantasy", "Books with magical worlds");
+        requestDto = new GenreDTO(null, "Fantasy", "Books with magical worlds");
+        responseDto = new GenreDTO(1L, "Fantasy", "Books with magical worlds");
 
         savedEntity = new Genre();
         savedEntity.setId(1L);
@@ -56,12 +58,13 @@ class GenreControllerTest {
     @Test
     @DisplayName("Should create Genre successfully")
     void createGenre_Success() throws Exception {
-        when(genreService.addGenre(any(GenreDTO.class))).thenReturn(validDto);
+        when(genreService.addGenre(any(GenreDTO.class))).thenReturn(responseDto);
 
         mockMvc.perform(post("/api/genres")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validDto)))
+                        .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.name").value("Fantasy"))
                 .andExpect(jsonPath("$.description").value("Books with magical worlds"));
     }
@@ -69,7 +72,7 @@ class GenreControllerTest {
     @Test
     @DisplayName("Should return 400 for missing name")
     void createGenre_MissingName_Returns400() throws Exception {
-        GenreDTO invalidDto = new GenreDTO("", "Books with magical worlds");
+        GenreDTO invalidDto = new GenreDTO(null, "", "Books with magical worlds");
 
         mockMvc.perform(post("/api/genres")
                         .contentType(MediaType.APPLICATION_JSON)

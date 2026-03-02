@@ -26,5 +26,12 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     Page<Book> findByTitleContainingIgnoreCaseAndGenreId(String title, Long genreId, Pageable pageable);
 
     List<Book> findByTitleIgnoreCaseAndPublishedYearAndLanguage(String title, Integer publishedYear, Language language);
+
+    boolean existsByGenreId(Long genreId);
+
+    boolean existsByLanguageId(Long languageId);
+
+    boolean existsByAgeGroupId(Long ageGroupId);
+
 }
 

@@ -7,12 +7,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class GenreMapper {
 
-    public  GenreDTO toDto(Genre genre) {
-        return new GenreDTO(genre.getName(), genre.getDescription());
+    public GenreDTO toDto(Genre genre) {
+        return new GenreDTO(genre.getId(), genre.getName(), genre.getDescription());
     }
 
-    public  Genre toEntity(GenreDTO dto) {
+    public Genre toEntity(GenreDTO dto) {
         Genre genre = new Genre();
+        genre.setId(dto.id());
         genre.setName(dto.name());
         genre.setDescription(dto.description());
         return genre;

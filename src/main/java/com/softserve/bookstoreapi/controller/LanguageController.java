@@ -9,10 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 public class LanguageController {
@@ -36,5 +34,11 @@ public class LanguageController {
     ) {
         Page<LanguageDTO> response = languageService.getAllLanguages(pageable);
         return ResponseEntity.ok(response);
+    }
+    @DeleteMapping("/api/languages/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteLanguage(@PathVariable Long id) {
+        languageService.deleteLanguage(id);
+        return ResponseEntity.noContent().build();
     }
 }

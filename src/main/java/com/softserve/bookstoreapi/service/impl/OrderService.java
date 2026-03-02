@@ -33,7 +33,7 @@ public class OrderService {
     private final PromoCodeRepository promoCodeRepository;
 
     @Transactional
-    public OrderDTO checkout(String userEmail, String promoCode) {
+    public OrderDTO checkout(String userEmail, CheckoutRequestDTO request) {
 
         Cart cart = cartRepository.findByUserEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Cart not found"));
@@ -53,6 +53,8 @@ public class OrderService {
 
         BigDecimal promoDiscountPercent = BigDecimal.ZERO;
         PromoCode usedPromoCode = null;
+
+        String promoCode = request.promoCode();
 
         if (promoCode != null && !promoCode.isBlank()) {
             PromoCodeValidationRequestDTO validationRequest =
@@ -79,6 +81,9 @@ public class OrderService {
         order.setAccount(account);
         order.setStatus(OrderStatus.PAID);
         order.setPaymentMethod(PaymentMethod.BALANCE);
+
+        order.setFullName(request.fullName());
+        order.setShippingAddress(request.shippingAddress());
 
         if (usedPromoCode != null) {
             order.setPromoCode(usedPromoCode);
@@ -183,7 +188,9 @@ public class OrderService {
                 order.getStatus(),
                 order.getPaymentMethod(),
                 order.getCreatedAt(),
-                items
+                items,
+                order.getFullName(),
+                order.getShippingAddress()
         );
     }
     @Transactional
@@ -248,12 +255,14 @@ public class OrderService {
         account.setBalance(account.getBalance().subtract(totalOrderAmount));
         accountRepository.save(account);
 
-        // 6. Создание заказа
         Order order = new Order();
         order.setAccount(account);
         order.setTotalAmount(totalOrderAmount);
         order.setStatus(OrderStatus.PAID);
         order.setPaymentMethod(PaymentMethod.BALANCE);
+
+        order.setFullName(request.fullName());
+        order.setShippingAddress(request.shippingAddress());
 
         if (usedPromoCode != null) {
             order.setPromoCode(usedPromoCode);
@@ -286,8 +295,26 @@ public class OrderService {
     public Page<OrderDTO> getUserOrders(String userEmail, Pageable pageable) {
         Account account = accountRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        Page<Order> orders = orderRepository.findByAccount(account, pageable);
+
+        Page<Order> orders;
+        if (account.getRole() == com.softserve.bookstoreapi.model.enums.UserRole.ROLE_ADMIN) {
+            orders = orderRepository.findAll(pageable);
+        } else {
+            orders = orderRepository.findByAccount(account, pageable);
+        }
 
         return orders.map(this::mapToDto);
+    }
+    @Transactional
+    public OrderDTO updateOrderStatus(Long orderId, OrderStatus newStatus) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+
+        if (order.getStatus() == OrderStatus.CANCELED && newStatus != OrderStatus.RETURNED) {}
+
+        order.setStatus(newStatus);
+        Order savedOrder = orderRepository.save(order);
+
+        return mapToDto(savedOrder);
     }
 }
